@@ -515,14 +515,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/php-debug-manager.git"
+    "url": "https://github.com/Aaron052399/vscode-php-debug-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/php-debug-manager/issues"
+    "url": "https://github.com/Aaron052399/vscode-php-debug-manager/issues"
   },
-  "homepage": "https://github.com/your-username/php-debug-manager#readme",
+  "homepage": "https://github.com/Aaron052399/vscode-php-debug-manager#readme",
   "license": "MIT",
-  "icon": "resources/icons/market-rocket.svg",
   "galleryBanner": {
     "color": "#0D9488",
     "theme": "dark"
