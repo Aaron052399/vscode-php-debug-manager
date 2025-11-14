@@ -2,7 +2,7 @@
   "name": "php-debug-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "publisher": "aaron-wang",
   "engines": {
     "vscode": "^1.74.0"
