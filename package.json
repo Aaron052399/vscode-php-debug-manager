@@ -2,7 +2,7 @@
   "name": "php-debug-manager",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "publisher": "aaron-wang",
   "engines": {
     "vscode": "^1.74.0"
@@ -452,7 +452,7 @@
         },
         "phpVarDumper.maxFileSize": {
           "type": "number",
-          "default": 1048576,
+          "default": 10485760,
           "description": "%config.maxFileSize.desc%"
         },
         "phpVarDumper.excludePatterns": {
@@ -522,6 +522,7 @@
   },
   "homepage": "https://github.com/Aaron052399/vscode-php-debug-manager#readme",
   "license": "MIT",
+  "icon": "resources/icons/market-rocket.png",
   "galleryBanner": {
     "color": "#0D9488",
     "theme": "dark"
