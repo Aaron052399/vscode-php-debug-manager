@@ -4,6 +4,12 @@
 
 ## English
 
+### 1.0.4 - 2025-11-14
+- Fixed some scanning performance issues
+
+### 1.0.3 - 2025-11-14
+- Optimized dynamic display logic of debug statement bookmarks
+
 ### 1.0.2 - 2025-11-14
 - Default `phpVarDumper.maxFileSize` increased to `10485760` bytes
 
@@ -14,6 +20,12 @@
 - Initial version with Debug Manager and VarDumper tool
 
 ## 简体中文
+
+### 1.0.4 - 2025-11-14
+- 修复了一些扫描的性能问题
+
+### 1.0.3 - 2025-11-14
+- 优化调试语句书签动态展示的逻辑
 
 ### 1.0.2 - 2025-11-14
 - 将默认 `phpVarDumper.maxFileSize` 提升至 `10485760` 字节
