@@ -1,0 +1,530 @@
+{
+  "name": "php-debug-manager",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
+  "version": "1.0.0",
+  "publisher": "aaron-wang",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "php",
+    "debug",
+    "var_dump",
+    "print_r",
+    "debug manager",
+    "code cleanup",
+    "development tools"
+  ],
+  "activationEvents": [
+    "onLanguage:php",
+    "onStartupFinished",
+    "onCommand:phpVarDumper.dumpVariable",
+    "onView:phpDebugManager",
+    "workspaceContains:**/*.php"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "phpVarDumper.dumpVariable",
+        "title": "%cmd.dumpVariable.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.debugManager.toggleBookmark",
+        "title": "%cmd.toggleBookmark.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(star)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.toggleBookmark.filled",
+        "title": "%cmd.toggleBookmarkFilled.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.toggleBookmarks.show",
+        "title": "%cmd.toggleBookmarks.show.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.toggleBookmarks.hide",
+        "title": "%cmd.toggleBookmarks.hide.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.clearBookmarks",
+        "title": "%cmd.clearBookmarks.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.refresh",
+        "title": "%cmd.refresh.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.focus",
+        "title": "%cmd.focus.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.debugManager.toggleExpandCollapse.expand",
+        "title": "%cmd.expandAll.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.toggleExpandCollapse.collapse",
+        "title": "%cmd.collapseAll.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.clearAll",
+        "title": "%cmd.clearAll.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.scanNow",
+        "title": "%cmd.scanNow.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.debugManager.export",
+        "title": "%cmd.export.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(save)"
+      },
+      {
+        "command": "phpVarDumper.exportListAs",
+        "title": "%cmd.exportAs.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(save-all)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.clearStatement",
+        "title": "%cmd.clearStatement.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.clearFile",
+        "title": "%cmd.clearFile.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "phpVarDumper.debugManager.copyContent",
+        "title": "%cmd.copyContent.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.debugManager.copyPath",
+        "title": "%cmd.copyPath.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.debugManager.configurePatterns",
+        "title": "%cmd.configurePatterns.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.debugManager.showManager",
+        "title": "%cmd.showManager.title%",
+        "category": "PHP Debug Manager"
+      },
+      {
+        "command": "phpVarDumper.exclude.addDir",
+        "title": "%cmd.exclude.addDir.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "phpVarDumper.exclude.removeDir",
+        "title": "%cmd.exclude.removeDir.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(check)"
+      },
+      {
+        "command": "phpVarDumper.exclude.addFile",
+        "title": "%cmd.exclude.addFile.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "phpVarDumper.exclude.removeFile",
+        "title": "%cmd.exclude.removeFile.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(check)"
+      },
+      {
+        "command": "phpVarDumper.exclude.openSettings",
+        "title": "%cmd.exclude.openSettings.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(settings)"
+      },
+      {
+        "command": "phpVarDumper.toggleView.nested",
+        "title": "%cmd.view.nested.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "phpVarDumper.toggleView.flat",
+        "title": "%cmd.view.flat.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "phpVarDumper.bookmarks.toggleExpandCollapse.expand",
+        "title": "%cmd.bookmarks.expandAll.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(expand-all)"
+      }
+      ,
+      {
+        "command": "phpVarDumper.bookmarks.toggleExpandCollapse.collapse",
+        "title": "%cmd.bookmarks.collapseAll.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(collapse-all)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "phpVarDumper.dumpVariable",
+        "key": "ctrl+shift+/",
+        "mac": "cmd+shift+/",
+        "when": "editorTextFocus && editorLangId == php"
+      },
+      {
+        "command": "phpVarDumper.exclude.addFile",
+        "key": "ctrl+alt+e",
+        "mac": "cmd+alt+e",
+        "when": "view == phpDebugManager"
+      },
+      {
+        "command": "phpVarDumper.exclude.removeFile",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "view == phpDebugManager"
+      },
+      {
+        "command": "phpVarDumper.exclude.openSettings",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s",
+        "when": "view == phpDebugManager"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "phpVarDumper.debugManager.refresh",
+          "when": "view == phpDebugManager",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleExpandCollapse.expand",
+          "when": "view == phpDebugManager && !phpVarDumper.managerExpanded",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleExpandCollapse.collapse",
+          "when": "view == phpDebugManager && phpVarDumper.managerExpanded",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.debugManager.clearAll",
+          "when": "view == phpDebugManager",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.toggleView.nested",
+          "when": "view == phpDebugManager && !phpVarDumper.viewModeNested",
+          "group": "navigation@1"
+        },
+        {
+          "command": "phpVarDumper.toggleView.flat",
+          "when": "view == phpDebugManager && phpVarDumper.viewModeNested",
+          "group": "navigation@1"
+        },
+        {
+          "command": "phpVarDumper.debugManager.export",
+          "when": "view == phpDebugManager",
+          "group": "navigation@2"
+        },
+        {
+          "command": "phpVarDumper.exportListAs",
+          "when": "view == phpDebugManager",
+          "group": "navigation@2"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleBookmarks.show",
+          "when": "view == phpDebugManager && !phpVarDumper.showBookmarksView",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleBookmarks.hide",
+          "when": "view == phpDebugManager && phpVarDumper.showBookmarksView",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.debugManager.clearBookmarks",
+          "when": "view == phpDebugBookmarks",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.bookmarks.toggleExpandCollapse.expand",
+          "when": "view == phpDebugBookmarks && !phpVarDumper.bookmarksExpanded",
+          "group": "navigation"
+        }
+        ,
+        {
+          "command": "phpVarDumper.bookmarks.toggleExpandCollapse.collapse",
+          "when": "view == phpDebugBookmarks && phpVarDumper.bookmarksExpanded",
+          "group": "navigation"
+        },
+        {
+          "command": "phpVarDumper.toggleView.nested",
+          "when": "view == phpDebugBookmarks && !phpVarDumper.viewModeNested",
+          "group": "navigation@1"
+        },
+        {
+          "command": "phpVarDumper.toggleView.flat",
+          "when": "view == phpDebugBookmarks && phpVarDumper.viewModeNested",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "phpVarDumper.debugManager.clearStatement",
+          "when": "view == phpDebugManager && viewItem == debugStatement",
+          "group": "inline"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleBookmark",
+          "when": "view == phpDebugManager && viewItem == debugStatement",
+          "group": "inline@1"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleBookmark.filled",
+          "when": "view == phpDebugManager && viewItem == bookmarkedStatement",
+          "group": "inline@1"
+        },
+        {
+          "command": "phpVarDumper.debugManager.copyContent",
+          "when": "view == phpDebugManager && viewItem == debugStatement",
+          "group": "copy@1"
+        },
+        {
+          "command": "phpVarDumper.debugManager.copyPath",
+          "when": "view == phpDebugManager && viewItem == debugStatement",
+          "group": "copy@2"
+        },
+        {
+          "command": "phpVarDumper.debugManager.clearFile",
+          "when": "view == phpDebugManager && viewItem == debugFile",
+          "group": "inline"
+        },
+        {
+          "command": "phpVarDumper.exclude.addDir",
+          "when": "view == phpDebugManager && viewItem == debugFolder",
+          "group": "navigation@2"
+        },
+        {
+          "command": "phpVarDumper.exclude.removeDir",
+          "when": "view == phpDebugManager && viewItem == excludedFolder",
+          "group": "navigation@2"
+        },
+        {
+          "command": "phpVarDumper.exclude.addFile",
+          "when": "view == phpDebugManager && viewItem == debugFile",
+          "group": "navigation@2"
+        },
+        {
+          "command": "phpVarDumper.exclude.removeFile",
+          "when": "view == phpDebugManager && viewItem == excludedFile",
+          "group": "navigation@2"
+        },
+        {
+          "command": "phpVarDumper.exclude.openSettings",
+          "when": "view == phpDebugManager && (viewItem == debugFile || viewItem == debugFolder || viewItem == excludedFile || viewItem == excludedFolder)",
+          "group": "navigation@3"
+        },
+        {
+          "command": "phpVarDumper.debugManager.toggleBookmark.filled",
+          "when": "view == phpDebugBookmarks && viewItem == bookmarkedStatement",
+          "group": "inline@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "phpVarDumper.debugManager.showManager",
+          "when": "resourceExtname == .php",
+          "group": "phpVarDumper"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "php-debug-container",
+          "title": "PHP Debug Manager",
+          "icon": "resources/icons/activitybar-rocket.svg"
+        }
+      ]
+    },
+    "views": {
+      "php-debug-container": [
+        {
+          "id": "phpDebugManager",
+          "name": "%view.manager.name%",
+          "when": "workspaceHasPHPFiles",
+          "icon": "$(debug-alt)"
+        },
+        {
+          "id": "phpDebugBookmarks",
+          "name": "%view.bookmarks.name%",
+          "when": "workspaceHasPHPFiles && phpVarDumper.showBookmarksView",
+          "icon": "$(star-full)"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%config.title%",
+      "properties": {
+        "phpVarDumper.stagingGuard.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.stagingGuard.enabled.desc%"
+        },
+        "phpVarDumper.stagingGuard.mode": {
+          "type": "string",
+          "enum": ["strict", "warn", "lenient"],
+          "default": "strict",
+          "description": "%config.stagingGuard.mode.desc%"
+        },
+        "phpVarDumper.language": {
+          "type": "string",
+          "enum": ["system", "en", "zh-cn"],
+          "default": "system",
+          "description": "%config.language.desc%"
+        },
+        "phpVarDumper.customPatterns": {
+          "type": "array",
+          "default": [
+            "var_dump",
+            "print_r",
+            "error_log",
+            "debug_backtrace",
+            "die",
+            "exit"
+          ],
+          "description": "%config.customPatterns.desc%",
+          "items": {
+            "type": "string"
+          }
+        },
+        "phpVarDumper.autoScan": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.autoScan.desc%"
+        },
+        "phpVarDumper.scanOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.scanOnStartup.desc%"
+        },
+        "phpVarDumper.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.showStatusBar.desc%"
+        },
+        "phpVarDumper.maxFileSize": {
+          "type": "number",
+          "default": 1048576,
+          "description": "%config.maxFileSize.desc%"
+        },
+        "phpVarDumper.excludePatterns": {
+          "type": "array",
+          "default": [
+            "**/vendor/**",
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/cache/**",
+            "**/tmp/**"
+          ],
+          "description": "%config.excludePatterns.desc%",
+          "items": {
+            "type": "string"
+          }
+        },
+        "phpVarDumper.enableNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.enableNotifications.desc%"
+        },
+        "phpVarDumper.export.defaultFormat": {
+          "type": "string",
+          "enum": ["csv", "json", "md"],
+          "default": "md",
+          "description": "%config.export.defaultFormat.desc%"
+        },
+        "phpVarDumper.export.fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["file", "line", "type", "text", "severity"]
+          },
+          "default": ["file", "line", "type", "text"],
+          "description": "%config.export.fields.desc%"
+        }
+      }
+    }
+  },
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.4",
+    "vsce": "^2.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/php-debug-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/php-debug-manager/issues"
+  },
+  "homepage": "https://github.com/your-username/php-debug-manager#readme",
+  "license": "MIT",
+  "icon": "resources/icons/market-rocket.svg",
+  "galleryBanner": {
+    "color": "#0D9488",
+    "theme": "dark"
+  }
+}

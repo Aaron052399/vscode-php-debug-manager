@@ -1,0 +1,42 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <radialGradient gradientTransform="matrix(1,0,0,1,28.63123658299446,74.42601776123047)" gradientUnits="userSpaceOnUse" r="64" cy="64" cx="64" id="sky">
+   <stop stop-color="#0f172a" offset="0"/>
+   <stop stop-color="#0b1223" offset="1"/>
+  </radialGradient>
+ </defs>
+ <!-- moon -->
+ <!-- stars -->
+ <!-- rocket -->
+ <g>
+  <title>Layer 1</title>
+  <circle id="svg_1" fill="url(#sky)" r="56" cy="64.20202" cx="64.40404"/>
+  <g id="svg_2">
+   <circle id="svg_3" fill="#e5e7eb" r="18" cy="87.33333" cx="26.52174"/>
+   <circle id="svg_4" fill="#cbd5e1" r="3.5" cy="81.33333" cx="20.52174"/>
+   <circle id="svg_5" fill="#cbd5e1" r="2.8" cy="85.33333" cx="31.52174"/>
+   <circle id="svg_6" fill="#cbd5e1" r="2.2" cy="94.33333" cx="24.52174"/>
+  </g>
+  <!-- body -->
+  <!-- nose -->
+  <!-- window -->
+  <!-- fins -->
+  <!-- flame -->
+  <g id="svg_21">
+   <path stroke="#e5e7eb" id="svg_15" stroke-width="2" fill="#ffffff" d="m65.00917,4.30394c12,7.17344 18,23.91146 18,40.64948c0,14.34687 -4,26.3026 -10,33.47604l-16,0c-6,-7.17344 -10,-19.12916 -10,-33.47604c0,-16.73802 6,-33.47604 18,-40.64948z"/>
+   <path stroke="null" id="svg_16" fill="#ef4444" d="m65.11018,28.68105c-24.18156,-0.90783 -5.25512,-19.54168 0,-22.79862c5.25512,3.25695 24.24022,21.75848 0,22.79862z"/>
+   <circle stroke="#1f2937" id="svg_17" stroke-width="2" fill="#0ea5e9" r="9.33632" cy="41.26289" cx="65.40798"/>
+   <path transform="rotate(-6.66249 42.0092 53.3224)" stroke="null" id="svg_18" fill="#ef4444" d="m47.00917,47.34456l-10,11.95573l9.57265,-3.27041l0.42735,-8.68532z"/>
+   <path transform="rotate(5.48322 88.2164 53.2187)" stroke="null" id="svg_19" fill="#ef4444" d="m83.21642,47.24094l10,11.95573l-10,-2.39115l0,-9.56458z"/>
+   <path stroke="null" id="svg_20" fill="#f59e0b" d="m65.00917,78.42946c6,7.17344 2,16.73802 0,21.52031c-2,-4.78229 -6,-14.34687 0,-21.52031z"/>
+  </g>
+  <g id="svg_22">
+   <path fill="#fde68a" stroke="null" id="svg_8" transform="translate(30 30) scale(1.1 1.1)" d="m-1.97628,5.50988l0.588,1.191l1.314,0.191l-0.951,0.927l0.225,1.309l-1.176,-0.618l-1.176,0.618l0.225,-1.309l-0.951,-0.927l1.314,-0.191l0.588,-1.191z"/>
+   <path fill="#fde68a" stroke="null" id="svg_9" transform="translate(48 22) scale(1 1)" d="m-4.2029,-4.89855l0.588,1.191l1.314,0.191l-0.951,0.927l0.225,1.309l-1.176,-0.618l-1.176,0.618l0.225,-1.309l-0.951,-0.927l1.314,-0.191l0.588,-1.191z"/>
+   <path fill="#fde68a" stroke="null" id="svg_10" transform="translate(90 28) scale(1.2 1.2)" d="m4.4686,1.38164l0.588,1.191l1.314,0.191l-0.951,0.927l0.225,1.309l-1.176,-0.618l-1.176,0.618l0.225,-1.309l-0.951,-0.927l1.314,-0.191l0.588,-1.191z"/>
+   <path fill="#fde68a" stroke="null" id="svg_11" transform="translate(78 50) scale(0.9 0.9)" d="m33.01127,14.58615l0.588,1.191l1.314,0.191l-0.951,0.927l0.225,1.309l-1.176,-0.618l-1.176,0.618l0.225,-1.309l-0.951,-0.927l1.314,-0.191l0.588,-1.191z"/>
+   <path fill="#fde68a" stroke="null" id="svg_12" transform="translate(104 60) scale(1.1 1.1)" d="m-15.41502,27.11726l0.588,1.191l1.314,0.191l-0.951,0.927l0.225,1.309l-1.176,-0.618l-1.176,0.618l0.225,-1.309l-0.951,-0.927l1.314,-0.191l0.588,-1.191z"/>
+   <path fill="#fde68a" stroke="null" id="svg_13" transform="translate(44 76) scale(1 1)" d="m-12.46377,-12.86957l0.588,1.191l1.314,0.191l-0.951,0.927l0.225,1.309l-1.176,-0.618l-1.176,0.618l0.225,-1.309l-0.951,-0.927l1.314,-0.191l0.588,-1.191z"/>
+  </g>
+ </g>
+</svg>

@@ -1,0 +1,24 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+# OS/IDE artifacts
+.DS_Store
+.vscode/
+
+# Local history and workspace metadata
+.history/
+.trae/
+
+# Test/coverage outputs
+coverage/
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Unused or backup icon resources
+resources/icons/activitybar-rocket_bk*.svg
