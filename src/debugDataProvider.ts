@@ -39,12 +39,12 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
     this.scanner = new DebugScanner();
     this.scanner.startWatching(this.handleScanComplete.bind(this));
     this.workspaceState = context.workspaceState;
-    const saved = this.workspaceState.get<string[]>('phpVarDumper.bookmarks', []);
+    const saved = this.workspaceState.get<string[]>('phpDebugManager.bookmarks', []);
     this.bookmarks = new Set(saved);
     this.output = output;
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('phpVarDumper.language')) {
-        const lang = vscode.workspace.getConfiguration('phpVarDumper').get<string>('language', 'en') as any;
+      if (e.affectsConfiguration('phpDebugManager.language')) {
+        const lang = vscode.workspace.getConfiguration('phpDebugManager').get<string>('language', 'en') as any;
         setLocale(lang as any);
         this.refresh();
       }
@@ -176,7 +176,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
             lineNumber: statement.lineNumber,
             bookmarked: this.isBookmarked(statement.id),
             parent: fileNode,
-            command: { command: 'phpVarDumper.openStatement', title: '打开', arguments: [statement] }
+            command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [statement] }
           };
           fileNode.children!.push(statementNode);
         });
@@ -235,7 +235,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
             lineNumber: statement.lineNumber,
             bookmarked: this.isBookmarked(statement.id),
             parent: fileNode,
-            command: { command: 'phpVarDumper.openStatement', title: '打开', arguments: [statement] }
+            command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [statement] }
           };
           fileNode.children!.push(statementNode);
         });
@@ -365,7 +365,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
       
       // 同步移除可能存在的书签记录，保持一致性
       if (this.bookmarks.delete(statement.id)) {
-        this.workspaceState.update('phpVarDumper.bookmarks', Array.from(this.bookmarks));
+        this.workspaceState.update('phpDebugManager.bookmarks', Array.from(this.bookmarks));
       }
 
       return true;
@@ -396,7 +396,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
     
     if (cleared > 0) {
       // 刷新书签、缓存与视图
-      this.workspaceState.update('phpVarDumper.bookmarks', Array.from(this.bookmarks));
+      this.workspaceState.update('phpDebugManager.bookmarks', Array.from(this.bookmarks));
       this.resultCache.clear();
       this.refresh();
     }
@@ -430,7 +430,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
 
     if (cleared > 0) {
       // 刷新书签、缓存与视图
-      this.workspaceState.update('phpVarDumper.bookmarks', Array.from(this.bookmarks));
+      this.workspaceState.update('phpDebugManager.bookmarks', Array.from(this.bookmarks));
       this.resultCache.clear();
       this.refresh();
     }
@@ -446,7 +446,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
     } else {
       this.bookmarks.add(id);
     }
-    this.workspaceState.update('phpVarDumper.bookmarks', Array.from(this.bookmarks));
+    this.workspaceState.update('phpDebugManager.bookmarks', Array.from(this.bookmarks));
     // 数据变化时刷新视图与缓存
     this.resultCache.clear();
     this.refresh();
@@ -464,7 +464,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
 
   public clearBookmarks(): void {
     this.bookmarks.clear();
-    this.workspaceState.update('phpVarDumper.bookmarks', []);
+    this.workspaceState.update('phpDebugManager.bookmarks', []);
     this.resultCache.clear();
     this.refresh();
   }

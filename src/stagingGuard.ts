@@ -124,7 +124,7 @@ export class StagingGuard {
         if (newly.length > 0) { try { this.output.appendLine(`[Guard] newly staged: ${newly.join(', ')}`); } catch {} }
         this.prevStaged.set(root, current);
         if (newly.length === 0) return;
-        const cfg = vscode.workspace.getConfiguration('phpVarDumper');
+        const cfg = vscode.workspace.getConfiguration('phpDebugManager');
         const enabled = cfg.get<boolean>('stagingGuard.enabled', true);
         if (!enabled) return;
         const mode = cfg.get<Mode>('stagingGuard.mode', 'strict');
@@ -142,7 +142,7 @@ export class StagingGuard {
           if (answer === t('btn.revealLocation')) {
             const items = result.statements.map(s => ({ label: `${s.type} | ${s.severity} | ${t('line')} ${s.lineNumber}`, detail: s.filePath, statement: s }));
             const picked = await vscode.window.showQuickPick(items as any, { placeHolder: t('pick.reveal.placeholder'), canPickMany: false });
-            if (picked) { await vscode.commands.executeCommand('phpVarDumper.openStatement', (picked as any).statement); }
+            if (picked) { await vscode.commands.executeCommand('phpDebugManager.openStatement', (picked as any).statement); }
           }
           if (answer === t('btn.continue')) {
             await this.stage(newly.map(p => vscode.Uri.file(p)));
@@ -151,7 +151,7 @@ export class StagingGuard {
             const first = newly[0];
             const stmts = result.statements.filter(s => s.filePath === first);
             const ln = stmts.length > 0 ? stmts[0].lineNumber : undefined;
-            await vscode.commands.executeCommand('phpVarDumper.revealFileInManager', first, ln);
+            await vscode.commands.executeCommand('phpDebugManager.revealFileInManager', first, ln);
           }
           return;
         }
@@ -172,7 +172,7 @@ export class StagingGuard {
           for (const p of Array.from(current)) { if (!prev.has(p)) newly.push(p); }
           this.prevStaged.set(root, current);
           if (newly.length === 0) return;
-          const cfg = vscode.workspace.getConfiguration('phpVarDumper');
+          const cfg = vscode.workspace.getConfiguration('phpDebugManager');
           const enabled = cfg.get<boolean>('stagingGuard.enabled', true);
           if (!enabled) return;
           const mode = cfg.get<Mode>('stagingGuard.mode', 'strict');
@@ -186,7 +186,7 @@ export class StagingGuard {
             if (answer === t('btn.revealLocation')) {
               const items = result.statements.map(s => ({ label: `${s.type} | ${s.severity} | ${t('line')} ${s.lineNumber}`, detail: s.filePath, statement: s }));
               const picked = await vscode.window.showQuickPick(items as any, { placeHolder: t('pick.reveal.placeholder'), canPickMany: false });
-              if (picked) { await vscode.commands.executeCommand('phpVarDumper.openStatement', (picked as any).statement); }
+              if (picked) { await vscode.commands.executeCommand('phpDebugManager.openStatement', (picked as any).statement); }
             }
             if (answer === t('btn.continue')) {
               await this.stage(newly.map(p => vscode.Uri.file(p)));
@@ -195,7 +195,7 @@ export class StagingGuard {
               const first = newly[0];
               const stmts = result.statements.filter(s => s.filePath === first);
               const ln = stmts.length > 0 ? stmts[0].lineNumber : undefined;
-              await vscode.commands.executeCommand('phpVarDumper.revealFileInManager', first, ln);
+              await vscode.commands.executeCommand('phpDebugManager.revealFileInManager', first, ln);
             }
             return;
           }

@@ -268,7 +268,7 @@ function getPrintStatement(languageId: string, expression: string): string {
 
 export async function activate(context: vscode.ExtensionContext) {
   // 初始化调试管理器视图
-  const cfgLang = vscode.workspace.getConfiguration('phpVarDumper').get<string>('language', 'en') as any;
+  const cfgLang = vscode.workspace.getConfiguration('phpDebugManager').get<string>('language', 'en') as any;
   setLocale(cfgLang as any);
   const output = vscode.window.createOutputChannel(t('channel.name'));
   const t0 = Date.now();
@@ -278,7 +278,7 @@ export async function activate(context: vscode.ExtensionContext) {
   output.appendLine(t('view.init.done', new Date().toLocaleString(), Date.now() - tView0));
   
   // 注册原有的dump变量命令
-  const dumpVariableDisposable = vscode.commands.registerCommand('phpVarDumper.dumpVariable', () => {
+  const dumpVariableDisposable = vscode.commands.registerCommand('phpDebugManager.dumpVariable', () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) { return; }
 
@@ -426,15 +426,15 @@ function registerDebugManagerProvider(context: vscode.ExtensionContext): void {
 // 旧ID兼容：为package.json中使用的命令ID提供别名
 function registerAliasCommands(context: vscode.ExtensionContext): void {
   const alias = [
-    ['phpVarDumper.debugManager.refresh', 'phpVarDumper.refresh'],
-    ['phpVarDumper.debugManager.clearAll', 'phpVarDumper.clearAll'],
-    ['phpVarDumper.debugManager.scanNow', 'phpVarDumper.scanNow'],
-    ['phpVarDumper.debugManager.export', 'phpVarDumper.exportList'],
-    ['phpVarDumper.debugManager.copyContent', 'phpVarDumper.copyStatementContent'],
-    ['phpVarDumper.debugManager.copyPath', 'phpVarDumper.copyFilePath'],
-    ['phpVarDumper.debugManager.configurePatterns', 'phpVarDumper.configurePatterns'],
-    ['phpVarDumper.debugManager.focus', 'phpVarDumper.focus'],
-    ['phpVarDumper.debugManager.showManager', 'phpVarDumper.focus']
+    ['phpDebugManager.debugManager.refresh', 'phpDebugManager.refresh'],
+    ['phpDebugManager.debugManager.clearAll', 'phpDebugManager.clearAll'],
+    ['phpDebugManager.debugManager.scanNow', 'phpDebugManager.scanNow'],
+    ['phpDebugManager.debugManager.export', 'phpDebugManager.exportList'],
+    ['phpDebugManager.debugManager.copyContent', 'phpDebugManager.copyStatementContent'],
+    ['phpDebugManager.debugManager.copyPath', 'phpDebugManager.copyFilePath'],
+    ['phpDebugManager.debugManager.configurePatterns', 'phpDebugManager.configurePatterns'],
+    ['phpDebugManager.debugManager.focus', 'phpDebugManager.focus'],
+    ['phpDebugManager.debugManager.showManager', 'phpDebugManager.focus']
   ] as const;
 
   for (const [oldId, newId] of alias) {
@@ -452,9 +452,9 @@ function registerAliasCommands(context: vscode.ExtensionContext): void {
 // 注册额外命令以复用同一逻辑
 // filled 版本的书签切换复用 toggleBookmark
 function registerExtraCommands(context: vscode.ExtensionContext): void {
-  const d = vscode.commands.registerCommand('phpVarDumper.debugManager.toggleBookmark.filled', async (node: any) => {
+  const d = vscode.commands.registerCommand('phpDebugManager.debugManager.toggleBookmark.filled', async (node: any) => {
     try {
-      await vscode.commands.executeCommand('phpVarDumper.debugManager.toggleBookmark', node);
+      await vscode.commands.executeCommand('phpDebugManager.debugManager.toggleBookmark', node);
     } catch (err) {
       console.error('toggleBookmark.filled 执行失败', err);
     }
@@ -488,7 +488,7 @@ async function setWorkspacePhpContext(): Promise<void> {
   }
 
 async function injectStageGuard(context: vscode.ExtensionContext, output: vscode.OutputChannel): Promise<void> {
-  const cfg = vscode.workspace.getConfiguration('phpVarDumper');
+  const cfg = vscode.workspace.getConfiguration('phpDebugManager');
   const lang = cfg.get<string>('language', 'en') as any;
   setLocale(lang as any);
   const enabled = cfg.get<boolean>('stagingGuard.enabled', true);
@@ -497,15 +497,15 @@ async function injectStageGuard(context: vscode.ExtensionContext, output: vscode
   try { await guard.start(); } catch (err) { console.error('StagingGuard 启动失败', err); }
   context.subscriptions.push({ dispose: () => guard.dispose() });
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
-    if (e.affectsConfiguration('phpVarDumper.language')) {
-      const newLang = vscode.workspace.getConfiguration('phpVarDumper').get<string>('language', 'en') as any;
+    if (e.affectsConfiguration('phpDebugManager.language')) {
+      const newLang = vscode.workspace.getConfiguration('phpDebugManager').get<string>('language', 'en') as any;
       setLocale(newLang as any);
       try { output.clear(); } catch {}
       output.appendLine(t('startup.loading', new Date().toLocaleString()));
       output.appendLine(t('view.init.done', new Date().toLocaleString(), 0));
       output.appendLine(t('startup.loaded', new Date().toLocaleString(), 0));
     }
-    if (e.affectsConfiguration('phpVarDumper.stagingGuard')) {
+    if (e.affectsConfiguration('phpDebugManager.stagingGuard')) {
       guard.dispose();
       injectStageGuard(context, output);
     }

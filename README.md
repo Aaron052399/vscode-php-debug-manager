@@ -36,13 +36,13 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 ### Configuration (example)
 ```json
 {
-  "phpVarDumper.customPatterns": ["var_dump", "print_r", "error_log", "debug_backtrace", "die", "exit"],
-  "phpVarDumper.autoScan": true,
-  "phpVarDumper.scanOnStartup": true,
-  "phpVarDumper.showStatusBar": true,
-  "phpVarDumper.stagingGuard.enabled": true,
-  "phpVarDumper.stagingGuard.mode": "strict",
-  "phpVarDumper.language": "system"
+  "phpDebugManager.customPatterns": ["var_dump", "print_r", "error_log", "debug_backtrace", "die", "exit"],
+  "phpDebugManager.autoScan": true,
+  "phpDebugManager.scanOnStartup": true,
+  "phpDebugManager.showStatusBar": true,
+  "phpDebugManager.stagingGuard.enabled": true,
+  "phpDebugManager.stagingGuard.mode": "strict",
+  "phpDebugManager.language": "system"
 }
 ```
 
@@ -54,12 +54,12 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 
 | Command | Shortcut | Description |
 |---|---|---|
-| `phpVarDumper.dumpVariable` | mac: `cmd+shift+/` / win/linux: `ctrl+shift+/` | Insert var_dump statement |
-| `phpVarDumper.debugManager.refresh` | - | Refresh list |
-| `phpVarDumper.debugManager.focus` | - | Focus manager view |
-| `phpVarDumper.debugManager.clearAll` | - | Clear all statements |
-| `phpVarDumper.debugManager.export` | - | Export list |
-| `phpVarDumper.debugManager.scanNow` | - | Scan now |
+| `phpDebugManager.dumpVariable` | mac: `cmd+shift+/` / win/linux: `ctrl+shift+/` | Insert var_dump statement |
+| `phpDebugManager.debugManager.refresh` | - | Refresh list |
+| `phpDebugManager.debugManager.focus` | - | Focus manager view |
+| `phpDebugManager.debugManager.clearAll` | - | Clear all statements |
+| `phpDebugManager.debugManager.export` | - | Export list |
+| `phpDebugManager.debugManager.scanNow` | - | Scan now |
 
 ## Performance (example projects)
 - Scan < 2s for 1000+ files

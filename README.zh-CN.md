@@ -38,7 +38,7 @@
 - 自定义调试语句匹配模式
 - 配置自动扫描行为
 - 控制状态栏显示
-- 支持多种扫描选项；支持 `phpVarDumper.language` 设置运行时语言（system/en/zh-cn，默认 system）
+- 支持多种扫描选项；支持 `phpDebugManager.language` 设置运行时语言（system/en/zh-cn，默认 system）
 
 ### 🌐 国际化
 - 清单文案随 VS Code UI 语言切换
@@ -61,20 +61,20 @@
 
 | 命令 | 快捷键 | 描述 |
 |------|--------|------|
-| `phpVarDumper.dumpVariable` | mac: `cmd+shift+/` / win/linux: `ctrl+shift+/` | 在光标位置插入 var_dump 语句 |
-| `phpVarDumper.debugManager.refresh` | - | 刷新调试语句列表 |
-| `phpVarDumper.debugManager.focus` | - | 聚焦到调试管理器 |
-| `phpVarDumper.debugManager.clearAll` | - | 清除所有调试语句 |
-| `phpVarDumper.debugManager.export` | - | 导出调试语句清单 |
-| `phpVarDumper.debugManager.scanNow` | - | 立即扫描调试语句 |
+| `phpDebugManager.dumpVariable` | mac: `cmd+shift+/` / win/linux: `ctrl+shift+/` | 在光标位置插入 var_dump 语句 |
+| `phpDebugManager.debugManager.refresh` | - | 刷新调试语句列表 |
+| `phpDebugManager.debugManager.focus` | - | 聚焦到调试管理器 |
+| `phpDebugManager.debugManager.clearAll` | - | 清除所有调试语句 |
+| `phpDebugManager.debugManager.export` | - | 导出调试语句清单 |
+| `phpDebugManager.debugManager.scanNow` | - | 立即扫描调试语句 |
 
 ## ⚙️ 配置选项（示例）
 
-在 VS Code 设置中搜索 `phpVarDumper` 进行配置：
+在 VS Code 设置中搜索 `phpDebugManager` 进行配置：
 
 ```json
 {
-  "phpVarDumper.customPatterns": [
+  "phpDebugManager.customPatterns": [
     "var_dump",
     "print_r",
     "error_log",
@@ -82,23 +82,23 @@
     "die",
     "exit"
   ],
-  "phpVarDumper.autoScan": true,
-  "phpVarDumper.scanOnStartup": true,
-  "phpVarDumper.showStatusBar": true,
-  "phpVarDumper.stagingGuard.enabled": true,
-  "phpVarDumper.stagingGuard.mode": "strict",
-  "phpVarDumper.language": "system"
+  "phpDebugManager.autoScan": true,
+  "phpDebugManager.scanOnStartup": true,
+  "phpDebugManager.showStatusBar": true,
+  "phpDebugManager.stagingGuard.enabled": true,
+  "phpDebugManager.stagingGuard.mode": "strict",
+  "phpDebugManager.language": "system"
 }
 ```
 
 ### 配置说明
 
-- `phpVarDumper.customPatterns`: 自定义调试语句匹配模式
-- `phpVarDumper.autoScan`: 是否启用自动扫描
-- `phpVarDumper.scanOnStartup`: 启动时是否自动扫描
-- `phpVarDumper.showStatusBar`: 是否在状态栏显示调试信息
-- `phpVarDumper.stagingGuard.*`: 暂存守卫开关与模式
-- `phpVarDumper.language`: 运行时语言（system/en/zh-cn）
+- `phpDebugManager.customPatterns`: 自定义调试语句匹配模式
+- `phpDebugManager.autoScan`: 是否启用自动扫描
+- `phpDebugManager.scanOnStartup`: 启动时是否自动扫描
+- `phpDebugManager.showStatusBar`: 是否在状态栏显示调试信息
+- `phpDebugManager.stagingGuard.*`: 暂存守卫开关与模式
+- `phpDebugManager.language`: 运行时语言（system/en/zh-cn）
 
 ## 🎯 使用场景
 

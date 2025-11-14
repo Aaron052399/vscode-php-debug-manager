@@ -76,7 +76,7 @@ class BookmarksDataProvider implements vscode.TreeDataProvider<TreeNode> {
               lineNumber: s.lineNumber,
               bookmarked: true,
               parent: fileNode,
-              command: { command: 'phpVarDumper.openStatement', title: '打开', arguments: [s] }
+              command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [s] }
             };
             fileNode.children!.push(node);
           }
@@ -135,7 +135,7 @@ class BookmarksDataProvider implements vscode.TreeDataProvider<TreeNode> {
               lineNumber: s.lineNumber,
               bookmarked: true,
               parent: fileNode,
-              command: { command: 'phpVarDumper.openStatement', title: '打开', arguments: [s] }
+              command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [s] }
             };
             fileNode.children!.push(node);
           }
@@ -189,7 +189,7 @@ export class DebugManagerView {
 
     // 创建状态栏项
     this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    this.statusBarItem.command = 'phpVarDumper.focus';
+    this.statusBarItem.command = 'phpDebugManager.focus';
     this.updateStatusBar();
     this.output.appendLine(t('view.init.done', new Date().toLocaleString(), 0));
 
@@ -200,23 +200,23 @@ export class DebugManagerView {
     this.performInitialScan();
 
     // 初始化书签视图显示状态
-    this.bookmarksVisible = this.context.workspaceState.get<boolean>('phpVarDumper.showBookmarksView', false) || false;
-    vscode.commands.executeCommand('setContext', 'phpVarDumper.showBookmarksView', this.bookmarksVisible);
-    const nested = this.context.workspaceState.get<boolean>('phpVarDumper.viewModeNested', true);
-    vscode.commands.executeCommand('setContext', 'phpVarDumper.viewModeNested', nested);
+    this.bookmarksVisible = this.context.workspaceState.get<boolean>('phpDebugManager.showBookmarksView', false) || false;
+    vscode.commands.executeCommand('setContext', 'phpDebugManager.showBookmarksView', this.bookmarksVisible);
+    const nested = this.context.workspaceState.get<boolean>('phpDebugManager.viewModeNested', true);
+    vscode.commands.executeCommand('setContext', 'phpDebugManager.viewModeNested', nested);
     this.dataProvider.setViewMode(nested ? 'nested' : 'flat');
 
     // 监听配置变化：excludePatterns 等更新后，重新加载并刷新
     context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('phpVarDumper.excludePatterns') ||
-            e.affectsConfiguration('phpVarDumper.maxFileSize') ||
-            e.affectsConfiguration('phpVarDumper.customPatterns')) {
+        if (e.affectsConfiguration('phpDebugManager.excludePatterns') ||
+            e.affectsConfiguration('phpDebugManager.maxFileSize') ||
+            e.affectsConfiguration('phpDebugManager.customPatterns')) {
           this.dataProvider.reloadScannerConfig();
           this.queueUpdate(() => this.refresh());
         }
-        if (e.affectsConfiguration('phpVarDumper.language')) {
-          const lang = vscode.workspace.getConfiguration('phpVarDumper').get<string>('language', 'en') as any;
+        if (e.affectsConfiguration('phpDebugManager.language')) {
+          const lang = vscode.workspace.getConfiguration('phpDebugManager').get<string>('language', 'en') as any;
           setLocale(lang as any);
           this.updateStatusBar();
           this.queueUpdate(() => this.refresh());
@@ -227,21 +227,21 @@ export class DebugManagerView {
 
   private registerCommands(context: vscode.ExtensionContext): void {
     // 基本操作命令（带防抖）
-    vscode.commands.registerCommand('phpVarDumper.refresh', () => {
+    vscode.commands.registerCommand('phpDebugManager.refresh', () => {
       this.queueUpdate(() => this.refresh());
     });
 
-    vscode.commands.registerCommand('phpVarDumper.focus', () => {
+    vscode.commands.registerCommand('phpDebugManager.focus', () => {
       this.treeView.reveal(undefined, { focus: true });
     });
-    vscode.commands.registerCommand('phpVarDumper.debugManager.toggleExpandCollapse.expand', async () => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.toggleExpandCollapse.expand', async () => {
       await this.expandAllTree(this.treeView, this.dataProvider);
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.managerExpanded', true);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.managerExpanded', true);
     });
-    vscode.commands.registerCommand('phpVarDumper.debugManager.toggleBookmarks.show', async () => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.toggleBookmarks.show', async () => {
       this.bookmarksVisible = true;
-      await this.context.workspaceState.update('phpVarDumper.showBookmarksView', true);
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.showBookmarksView', true);
+      await this.context.workspaceState.update('phpDebugManager.showBookmarksView', true);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.showBookmarksView', true);
       this.bookmarksProvider.refresh();
       const roots = await this.bookmarksProvider.getChildren();
       if (roots && roots.length > 0) {
@@ -249,34 +249,34 @@ export class DebugManagerView {
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.debugManager.toggleBookmarks.hide', async () => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.toggleBookmarks.hide', async () => {
       this.bookmarksVisible = false;
-      await this.context.workspaceState.update('phpVarDumper.showBookmarksView', false);
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.showBookmarksView', false);
+      await this.context.workspaceState.update('phpDebugManager.showBookmarksView', false);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.showBookmarksView', false);
     });
-    vscode.commands.registerCommand('phpVarDumper.debugManager.toggleExpandCollapse.collapse', async () => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.toggleExpandCollapse.collapse', async () => {
       await vscode.commands.executeCommand('workbench.actions.treeView.phpDebugManager.collapseAll');
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.managerExpanded', false);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.managerExpanded', false);
     });
-    vscode.commands.registerCommand('phpVarDumper.bookmarks.toggleExpandCollapse.expand', async () => {
+    vscode.commands.registerCommand('phpDebugManager.bookmarks.toggleExpandCollapse.expand', async () => {
       await this.expandAllTree(this.bookmarksView, this.bookmarksProvider);
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.bookmarksExpanded', true);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.bookmarksExpanded', true);
     });
-    vscode.commands.registerCommand('phpVarDumper.bookmarks.toggleExpandCollapse.collapse', async () => {
+    vscode.commands.registerCommand('phpDebugManager.bookmarks.toggleExpandCollapse.collapse', async () => {
       await vscode.commands.executeCommand('workbench.actions.treeView.phpDebugBookmarks.collapseAll');
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.bookmarksExpanded', false);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.bookmarksExpanded', false);
     });
 
-    vscode.commands.registerCommand('phpVarDumper.toggleView.nested', async () => {
-      await this.context.workspaceState.update('phpVarDumper.viewModeNested', true);
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.viewModeNested', true);
+    vscode.commands.registerCommand('phpDebugManager.toggleView.nested', async () => {
+      await this.context.workspaceState.update('phpDebugManager.viewModeNested', true);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.viewModeNested', true);
       this.dataProvider.setViewMode('nested');
       this.bookmarksProvider.refresh();
     });
 
-    vscode.commands.registerCommand('phpVarDumper.toggleView.flat', async () => {
-      await this.context.workspaceState.update('phpVarDumper.viewModeNested', false);
-      await vscode.commands.executeCommand('setContext', 'phpVarDumper.viewModeNested', false);
+    vscode.commands.registerCommand('phpDebugManager.toggleView.flat', async () => {
+      await this.context.workspaceState.update('phpDebugManager.viewModeNested', false);
+      await vscode.commands.executeCommand('setContext', 'phpDebugManager.viewModeNested', false);
       this.dataProvider.setViewMode('flat');
       this.bookmarksProvider.refresh();
     });
@@ -284,32 +284,32 @@ export class DebugManagerView {
     // 已移除搜索功能
 
     // 导航命令
-    vscode.commands.registerCommand('phpVarDumper.openStatement', (statement: DebugStatement) => {
+    vscode.commands.registerCommand('phpDebugManager.openStatement', (statement: DebugStatement) => {
       this.openStatement(statement);
     });
 
     // 清除命令（批量优化）
-    vscode.commands.registerCommand('phpVarDumper.debugManager.clearStatement', async (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.clearStatement', async (node: TreeNode) => {
       if (node.type === 'statement' && node.debugStatement) {
         this.queueUpdate(() => this.clearStatement(node.debugStatement!));
         this.output.appendLine(`[Clean] Clear statement: ${node.debugStatement.filePath}:${node.debugStatement.lineNumber}`);
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.debugManager.clearFile', async (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.clearFile', async (node: TreeNode) => {
       if (node.type === 'file' && node.filePath) {
         this.queueUpdate(() => this.clearFile(node.filePath!));
         this.output.appendLine(`[Clean] Clear file statements: ${node.filePath}`);
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.clearAll', async () => {
+    vscode.commands.registerCommand('phpDebugManager.clearAll', async () => {
       this.queueUpdate(() => this.clearAll());
       this.output.appendLine('[Clean] Clear all debug statements');
     });
 
     // 书签相关命令
-    vscode.commands.registerCommand('phpVarDumper.debugManager.toggleBookmark', (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.toggleBookmark', (node: TreeNode) => {
       if (node.type === 'statement' && node.debugStatement) {
         const on = this.dataProvider.toggleBookmark(node.debugStatement);
         vscode.window.setStatusBarMessage(on ? t('bookmark.added') : t('bookmark.removed'), 1500);
@@ -320,75 +320,75 @@ export class DebugManagerView {
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.debugManager.clearBookmarks', () => {
+    vscode.commands.registerCommand('phpDebugManager.debugManager.clearBookmarks', () => {
       this.dataProvider.clearBookmarks();
       this.bookmarksProvider.refresh();
       vscode.window.showInformationMessage(t('bookmarks.cleared'));
     });
 
     // 批量操作命令
-    vscode.commands.registerCommand('phpVarDumper.exportList', () => {
+    vscode.commands.registerCommand('phpDebugManager.exportList', () => {
       this.exportStatementList();
       this.output.appendLine('[Export] Export debug statements (txt)');
     });
 
-    vscode.commands.registerCommand('phpVarDumper.exportListAs', () => {
+    vscode.commands.registerCommand('phpDebugManager.exportListAs', () => {
       this.exportStatementListAs();
       this.output.appendLine('[Export] Export debug statements (select format)');
     });
 
-    vscode.commands.registerCommand('phpVarDumper.revealFileInManager', async (filePath: string, line?: number) => {
+    vscode.commands.registerCommand('phpDebugManager.revealFileInManager', async (filePath: string, line?: number) => {
       await this.revealFileInManager(filePath, line);
     });
 
-    vscode.commands.registerCommand('phpVarDumper.scanNow', () => {
+    vscode.commands.registerCommand('phpDebugManager.scanNow', () => {
       this.queueUpdate(() => this.refresh());
     });
 
     // 上下文菜单命令（优化）
-    vscode.commands.registerCommand('phpVarDumper.copyStatementContent', (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.copyStatementContent', (node: TreeNode) => {
       if (node.type === 'statement' && node.debugStatement) {
         this.copyToClipboard(node.debugStatement.content, t('copy.content.ok'));
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.copyFilePath', (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.copyFilePath', (node: TreeNode) => {
       if (node.filePath) {
         this.copyToClipboard(node.filePath, t('copy.path.ok'));
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.exclude.addDir', async (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.exclude.addDir', async (node: TreeNode) => {
       if (node.type === 'folder' && node.filePath) {
         await this.updateExcludePatterns([`${node.filePath}/**`], true);
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.exclude.removeDir', async (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.exclude.removeDir', async (node: TreeNode) => {
       if (node.type === 'folder' && node.filePath) {
         await this.updateExcludePatterns([`${node.filePath}/**`], false);
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.exclude.addFile', async (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.exclude.addFile', async (node: TreeNode) => {
       if (node.type === 'file' && node.filePath) {
         await this.updateExcludePatterns([node.filePath], true);
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.exclude.removeFile', async (node: TreeNode) => {
+    vscode.commands.registerCommand('phpDebugManager.exclude.removeFile', async (node: TreeNode) => {
       if (node.type === 'file' && node.filePath) {
         await this.updateExcludePatterns([node.filePath], false);
       }
     });
 
-    vscode.commands.registerCommand('phpVarDumper.exclude.openSettings', async () => {
-      await vscode.commands.executeCommand('workbench.action.openSettings', 'phpVarDumper.excludePatterns');
+    vscode.commands.registerCommand('phpDebugManager.exclude.openSettings', async () => {
+      await vscode.commands.executeCommand('workbench.action.openSettings', 'phpDebugManager.excludePatterns');
       this.output.appendLine(t('menu.open.settings.exclude'));
     });
 
     // 配置相关命令
-    vscode.commands.registerCommand('phpVarDumper.configurePatterns', () => {
+    vscode.commands.registerCommand('phpDebugManager.configurePatterns', () => {
       this.configurePatterns();
       this.output.appendLine(t('menu.config.patterns'));
     });
@@ -669,7 +669,7 @@ export class DebugManagerView {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration('phpVarDumper');
+    const config = vscode.workspace.getConfiguration('phpDebugManager');
     const defaultFormat = config.get<string>('export.defaultFormat', 'md');
     const defaultFields = config.get<string[]>('export.fields', ['file', 'line', 'type', 'text']);
 
@@ -899,7 +899,7 @@ export class DebugManagerView {
   }
 
   private async configurePatterns(): Promise<void> {
-    const config = vscode.workspace.getConfiguration('phpVarDumper');
+    const config = vscode.workspace.getConfiguration('phpDebugManager');
     const currentPatterns = config.get<string[]>('customPatterns', []);
     
     const newPatterns = await vscode.window.showInputBox({
@@ -947,7 +947,7 @@ export class DebugManagerView {
   }
 
   private async updateExcludePatterns(paths: string[], add: boolean): Promise<void> {
-    const config = vscode.workspace.getConfiguration('phpVarDumper');
+    const config = vscode.workspace.getConfiguration('phpDebugManager');
     const current = config.get<string[]>('excludePatterns', []) || [];
     let next: string[] = current.slice();
     if (add) {
@@ -1030,7 +1030,7 @@ export class DebugManagerView {
         await this.treeView.reveal(path[i], { expand: true });
       }
     };
-    await vscode.commands.executeCommand('phpVarDumper.focus');
+    await vscode.commands.executeCommand('phpDebugManager.focus');
     await expandAncestors(targetFile);
     if (targetStmt) {
       await this.treeView.reveal(targetStmt, { focus: true, expand: true });

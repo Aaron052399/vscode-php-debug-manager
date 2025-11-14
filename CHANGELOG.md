@@ -11,7 +11,7 @@
 - Optimized dynamic display logic of debug statement bookmarks
 
 ### 1.0.2 - 2025-11-14
-- Default `phpVarDumper.maxFileSize` increased to `10485760` bytes
+- Default `phpDebugManager.maxFileSize` increased to `10485760` bytes
 
 ### 1.0.1 - 2025-11-14
 - Initial public release to VS Marketplace
@@ -28,7 +28,7 @@
 - 优化调试语句书签动态展示的逻辑
 
 ### 1.0.2 - 2025-11-14
-- 将默认 `phpVarDumper.maxFileSize` 提升至 `10485760` 字节
+- 将默认 `phpDebugManager.maxFileSize` 提升至 `10485760` 字节
 
 ### 1.0.1 - 2025-11-14
 - 首次公开发布至 VS Marketplace
