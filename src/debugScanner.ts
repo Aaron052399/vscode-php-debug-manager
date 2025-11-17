@@ -600,20 +600,7 @@ export class DebugScanner {
     }, 1000); // 1秒防抖
   }
 
-  public updatePatterns(customPatterns?: string[]): void {
-    if (customPatterns && customPatterns.length > 0) {
-      this.patterns = customPatterns.map(pattern => {
-        try {
-          return new RegExp(pattern, 'gi');
-        } catch (error) {
-          console.error(`无效的正则表达式: ${pattern}`, error);
-          return null;
-        }
-      }).filter(Boolean) as RegExp[];
-    } else {
-      this.patterns = this.buildPatterns();
-    }
-  }
+  
 
   public dispose(): void {
     this.stopWatching();
