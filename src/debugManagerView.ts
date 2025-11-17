@@ -193,6 +193,10 @@ export class DebugManagerView {
     this.updateStatusBar();
     this.output.appendLine(t('view.init.done', new Date().toLocaleString(), 0));
 
+    // 恢复筛选设置（在首次扫描前生效）
+    const disabled = this.context.workspaceState.get<DebugStatement['type'][]>('phpDebugManager.disabledTypes', []) || [];
+    this.dataProvider.setDisabledTypes(disabled);
+
     // 注册命令
     this.registerCommands(context);
     
@@ -210,8 +214,7 @@ export class DebugManagerView {
     context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
         if (e.affectsConfiguration('phpDebugManager.excludePatterns') ||
-            e.affectsConfiguration('phpDebugManager.maxFileSize') ||
-            e.affectsConfiguration('phpDebugManager.customPatterns')) {
+            e.affectsConfiguration('phpDebugManager.maxFileSize')) {
           this.dataProvider.reloadScannerConfig();
           this.queueUpdate(() => this.refresh());
         }
@@ -279,6 +282,10 @@ export class DebugManagerView {
       await vscode.commands.executeCommand('setContext', 'phpDebugManager.viewModeNested', false);
       this.dataProvider.setViewMode('flat');
       this.bookmarksProvider.refresh();
+    });
+
+    vscode.commands.registerCommand('phpDebugManager.filterTypes', async () => {
+      await this.openFilterTypes();
     });
 
     // 已移除搜索功能
@@ -387,11 +394,7 @@ export class DebugManagerView {
       this.output.appendLine(t('menu.open.settings.exclude'));
     });
 
-    // 配置相关命令
-    vscode.commands.registerCommand('phpDebugManager.configurePatterns', () => {
-      this.configurePatterns();
-      this.output.appendLine(t('menu.config.patterns'));
-    });
+    
 
     // 添加到订阅
     context.subscriptions.push(
@@ -490,6 +493,27 @@ export class DebugManagerView {
   }
 
   // 已移除搜索框
+
+  private async openFilterTypes(): Promise<void> {
+    const allTypes: DebugStatement['type'][] = [
+      'var_dump','print_r','echo','print','var_export','printf','die','exit','error_log','trigger_error','user_error','debug_backtrace','dump','dd','xdebug_var_dump','xdebug_debug_zval','xdebug_break'
+    ];
+    const current = this.context.workspaceState.get<DebugStatement['type'][]>('phpDebugManager.disabledTypes', []) || [];
+    const items = allTypes.map(t => ({ label: t, picked: current.includes(t) }));
+    const picked = await vscode.window.showQuickPick(items, {
+      placeHolder: t('filter.pick.placeholder'),
+      canPickMany: true
+    });
+    if (picked === undefined) {
+      return;
+    }
+    const disabled = picked.length > 0 ? picked.map(p => p.label as DebugStatement['type']) : [];
+    await this.context.workspaceState.update('phpDebugManager.disabledTypes', disabled);
+    this.dataProvider.setDisabledTypes(disabled);
+    this.bookmarksProvider.refresh();
+    this.queueUpdate(() => this.refresh());
+    vscode.window.setStatusBarMessage(disabled.length > 0 ? t('filter.applied') : t('filter.cleared'), 2000);
+  }
 
   private async openStatement(statement: DebugStatement): Promise<void> {
     try {
@@ -898,26 +922,7 @@ export class DebugManagerView {
     return render(all, '').join('\n');
   }
 
-  private async configurePatterns(): Promise<void> {
-    const config = vscode.workspace.getConfiguration('phpDebugManager');
-    const currentPatterns = config.get<string[]>('customPatterns', []);
-    
-    const newPatterns = await vscode.window.showInputBox({
-      prompt: 'Enter regex for custom debug statements (comma separated)',
-      value: currentPatterns.join(', '),
-      placeHolder: 'e.g. var_dump\\(.*\\), print_r\\(.*\\)'
-    });
-
-    if (newPatterns !== undefined) {
-      const patterns = newPatterns.split(',').map(p => p.trim()).filter(p => p);
-      await config.update('customPatterns', patterns, vscode.ConfigurationTarget.Workspace);
-      
-      this.dataProvider.updateScannerPatterns(patterns);
-      await this.refresh();
-      
-      vscode.window.showInformationMessage('Debug patterns updated');
-    }
-  }
+  
 
   private copyToClipboard(text: string, message: string): void {
         vscode.env.clipboard.writeText(text).then(
