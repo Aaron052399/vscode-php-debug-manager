@@ -4,6 +4,10 @@
 
 ## English
 
+### 1.0.6 - 2025-11-17
+- Scanner now reads `maxFileSize` and `excludePatterns` strictly from settings (no hardcoded defaults)
+- Configuration changes reliably reload and apply during scans
+
 ### 1.0.5 - 2025-11-17
 - Added Debug Manager view filter (funnel) to hide selected built-in debug types
 - Added staging guard types configuration and command to choose intercept types (strict/warn)
@@ -24,6 +28,10 @@
 - Initial version with Debug Manager and VarDumper tool
 
 ## 简体中文
+
+### 1.0.6 - 2025-11-17
+- 扫描器严格从设置读取 `maxFileSize` 与 `excludePatterns`（无代码默认值）
+- 配置变更在扫描过程中可靠重载并生效
 
 ### 1.0.5 - 2025-11-17
 - 新增 Debug Manager 漏斗筛选，按内置类型隐藏视图调试语句
