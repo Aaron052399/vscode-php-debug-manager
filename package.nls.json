@@ -20,7 +20,6 @@
   "cmd.clearFile.title": "Clear All Debug Statements in File",
   "cmd.copyContent.title": "Copy Debug Content",
   "cmd.copyPath.title": "Copy File Path",
-  "cmd.configurePatterns.title": "Configure Debug Statement Patterns",
   "cmd.showManager.title": "Show Debug Manager",
   "cmd.exclude.addDir.title": "Add to Excluded Folders",
   "cmd.exclude.removeDir.title": "Remove from Excluded Folders",
@@ -31,6 +30,8 @@
   "cmd.view.flat.title": "Flat Tree Mode",
   "cmd.bookmarks.expandAll.title": "Expand All",
   "cmd.bookmarks.collapseAll.title": "Collapse All",
+  "cmd.filterTypes.title": "Filter Debug Types",
+  "cmd.stagingGuard.configureTypes.title": "Configure Guard Types",
 
   "view.manager.name": "PHP Debug Manager",
   "view.bookmarks.name": "Debug Statement Bookmarks",
@@ -39,7 +40,6 @@
   "config.stagingGuard.enabled.desc": "Enable staging guard for Source Control",
   "config.stagingGuard.mode.desc": "Staging guard mode: strict blocks, warn confirms, lenient logs only",
   "config.language.desc": "Extension language: follow system, English or Simplified Chinese",
-  "config.customPatterns.desc": "Custom debug statement patterns to scan",
   "config.autoScan.desc": "Enable automatic scanning",
   "config.scanOnStartup.desc": "Scan on startup",
   "config.showStatusBar.desc": "Show status bar information",
@@ -48,4 +48,6 @@
   "config.enableNotifications.desc": "Enable notifications after scan completed",
   "config.export.defaultFormat.desc": "Default export format: csv, json or md (Markdown)",
   "config.export.fields.desc": "Fields to include in export"
+  ,
+  "config.stagingGuard.types.desc": "Debug statement types to intercept in strict/warn modes"
 }

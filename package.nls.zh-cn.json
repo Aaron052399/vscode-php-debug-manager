@@ -20,7 +20,6 @@
   "cmd.clearFile.title": "清除文件中的所有调试语句",
   "cmd.copyContent.title": "复制调试内容",
   "cmd.copyPath.title": "复制文件路径",
-  "cmd.configurePatterns.title": "配置调试语句模式",
   "cmd.showManager.title": "显示调试管理器",
   "cmd.exclude.addDir.title": "添加到排除目录",
   "cmd.exclude.removeDir.title": "取消排除目录",
@@ -31,6 +30,8 @@
   "cmd.view.flat.title": "平直树状图模式",
   "cmd.bookmarks.expandAll.title": "全部展开",
   "cmd.bookmarks.collapseAll.title": "全部折叠",
+  "cmd.filterTypes.title": "筛选调试语句类型",
+  "cmd.stagingGuard.configureTypes.title": "配置阶段防护拦截类型",
 
   "view.manager.name": "PHP 调试管理器",
   "view.bookmarks.name": "调试语句书签",
@@ -39,7 +40,6 @@
   "config.stagingGuard.enabled.desc": "启用对源码管理器阶段操作的调试语句防护",
   "config.stagingGuard.mode.desc": "阶段防护模式：strict 严格阻止，warn 警告确认，lenient 仅记录日志",
   "config.language.desc": "扩展语言：跟随系统、英文或简体中文",
-  "config.customPatterns.desc": "自定义要扫描的调试语句模式",
   "config.autoScan.desc": "是否启用自动扫描功能",
   "config.scanOnStartup.desc": "启动时是否自动扫描调试语句",
   "config.showStatusBar.desc": "是否在状态栏显示调试信息",
@@ -48,4 +48,6 @@
   "config.enableNotifications.desc": "是否启用扫描完成通知",
   "config.export.defaultFormat.desc": "导出默认格式：csv、json 或 md (Markdown)",
   "config.export.fields.desc": "导出包含的字段列表"
+  ,
+  "config.stagingGuard.types.desc": "在严格/警告模式下需要拦截的调试语句类型"
 }
