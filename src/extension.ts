@@ -4,6 +4,9 @@ import { DebugScanner } from './debugScanner';
 import { StagingGuard } from './stagingGuard';
 import { setLocale, t } from './i18n';
 
+let currentGuard: StagingGuard | null = null;
+let guardCfgListener: vscode.Disposable | null = null;
+
 function analyzeBrackets(editor: vscode.TextEditor, selection: vscode.Selection) {
   const currentLine = editor.document.lineAt(selection.end.line);
   const nextLineIndex = Math.min(selection.end.line + 1, editor.document.lineCount - 1);
@@ -432,7 +435,6 @@ function registerAliasCommands(context: vscode.ExtensionContext): void {
     ['phpDebugManager.debugManager.export', 'phpDebugManager.exportList'],
     ['phpDebugManager.debugManager.copyContent', 'phpDebugManager.copyStatementContent'],
     ['phpDebugManager.debugManager.copyPath', 'phpDebugManager.copyFilePath'],
-    ['phpDebugManager.debugManager.configurePatterns', 'phpDebugManager.configurePatterns'],
     ['phpDebugManager.debugManager.focus', 'phpDebugManager.focus'],
     ['phpDebugManager.debugManager.showManager', 'phpDebugManager.focus']
   ] as const;
@@ -460,6 +462,21 @@ function registerExtraCommands(context: vscode.ExtensionContext): void {
     }
   });
   context.subscriptions.push(d);
+
+  const cfgTypesCmd = vscode.commands.registerCommand('phpDebugManager.stagingGuard.configureTypes', async () => {
+    const all: Array<import('./debugScanner').DebugStatement['type']> = [
+      'var_dump','print_r','echo','print','var_export','printf','die','exit','error_log','trigger_error','user_error','debug_backtrace','dump','dd','xdebug_var_dump','xdebug_debug_zval','xdebug_break'
+    ];
+    const cfg = vscode.workspace.getConfiguration('phpDebugManager');
+    const current = cfg.get<string[]>('stagingGuard.types', all) || all;
+    const items = all.map(t => ({ label: t, picked: current.includes(t) }));
+    const picked = await vscode.window.showQuickPick(items as any, { placeHolder: t('staging.types.pick.placeholder'), canPickMany: true });
+    if (picked === undefined) return;
+    const next = (picked.length > 0 ? picked.map((p: any) => p.label) : all);
+    await cfg.update('stagingGuard.types', next, vscode.ConfigurationTarget.Workspace);
+    vscode.window.setStatusBarMessage(t('staging.types.applied'), 2000);
+  });
+  context.subscriptions.push(cfgTypesCmd);
 }
 
 // 设置 workspaceHasPHPFiles 上下文键
@@ -492,11 +509,15 @@ async function injectStageGuard(context: vscode.ExtensionContext, output: vscode
   const lang = cfg.get<string>('language', 'en') as any;
   setLocale(lang as any);
   const enabled = cfg.get<boolean>('stagingGuard.enabled', true);
-  if (!enabled) return;
-  const guard = new StagingGuard(output);
-  try { await guard.start(); } catch (err) { console.error('StagingGuard 启动失败', err); }
-  context.subscriptions.push({ dispose: () => guard.dispose() });
-  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+  if (!enabled) {
+    if (currentGuard) { currentGuard.stop(); currentGuard = null; }
+    return;
+  }
+  if (currentGuard) { currentGuard.stop(); }
+  currentGuard = new StagingGuard(output);
+  try { await currentGuard.start(); } catch (err) { console.error('StagingGuard 启动失败', err); }
+  if (guardCfgListener) { try { guardCfgListener.dispose(); } catch {} }
+  guardCfgListener = vscode.workspace.onDidChangeConfiguration(e => {
     if (e.affectsConfiguration('phpDebugManager.language')) {
       const newLang = vscode.workspace.getConfiguration('phpDebugManager').get<string>('language', 'en') as any;
       setLocale(newLang as any);
@@ -506,8 +527,9 @@ async function injectStageGuard(context: vscode.ExtensionContext, output: vscode
       output.appendLine(t('startup.loaded', new Date().toLocaleString(), 0));
     }
     if (e.affectsConfiguration('phpDebugManager.stagingGuard')) {
-      guard.dispose();
+      try { currentGuard?.stop(); } catch {}
       injectStageGuard(context, output);
     }
-  }));
+  });
+  context.subscriptions.push(guardCfgListener);
 }
