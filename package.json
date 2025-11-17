@@ -135,11 +135,6 @@
         "category": "PHP Debug Manager"
       },
       {
-        "command": "phpDebugManager.debugManager.configurePatterns",
-        "title": "%cmd.configurePatterns.title%",
-        "category": "PHP Debug Manager"
-      },
-      {
         "command": "phpDebugManager.debugManager.showManager",
         "title": "%cmd.showManager.title%",
         "category": "PHP Debug Manager"
@@ -199,6 +194,20 @@
         "category": "PHP Debug Manager",
         "icon": "$(collapse-all)"
       }
+      ,
+      {
+        "command": "phpDebugManager.filterTypes",
+        "title": "%cmd.filterTypes.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(filter)"
+      }
+      ,
+      {
+        "command": "phpDebugManager.stagingGuard.configureTypes",
+        "title": "%cmd.stagingGuard.configureTypes.title%",
+        "category": "PHP Debug Manager",
+        "icon": "$(shield)"
+      }
     ],
     "keybindings": [
       {
@@ -256,6 +265,16 @@
         {
           "command": "phpDebugManager.toggleView.flat",
           "when": "view == phpDebugManager && phpDebugManager.viewModeNested",
+          "group": "navigation@1"
+        },
+        {
+          "command": "phpDebugManager.filterTypes",
+          "when": "view == phpDebugManager",
+          "group": "navigation@1"
+        },
+        {
+          "command": "phpDebugManager.stagingGuard.configureTypes",
+          "when": "view == phpDebugManager",
           "group": "navigation@1"
         },
         {
@@ -420,21 +439,6 @@
           "default": "system",
           "description": "%config.language.desc%"
         },
-        "phpDebugManager.customPatterns": {
-          "type": "array",
-          "default": [
-            "var_dump",
-            "print_r",
-            "error_log",
-            "debug_backtrace",
-            "die",
-            "exit"
-          ],
-          "description": "%config.customPatterns.desc%",
-          "items": {
-            "type": "string"
-          }
-        },
         "phpDebugManager.autoScan": {
           "type": "boolean",
           "default": true,
@@ -488,6 +492,24 @@
           },
           "default": ["file", "line", "type", "text"],
           "description": "%config.export.fields.desc%"
+        }
+        ,
+        "phpDebugManager.stagingGuard.types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "var_dump","print_r","echo","print","var_export","printf",
+              "die","exit","error_log","trigger_error","user_error",
+              "debug_backtrace","dump","dd","xdebug_var_dump","xdebug_debug_zval","xdebug_break"
+            ]
+          },
+          "default": [
+            "var_dump","print_r","echo","print","var_export","printf",
+            "die","exit","error_log","trigger_error","user_error",
+            "debug_backtrace","dump","dd","xdebug_var_dump","xdebug_debug_zval","xdebug_break"
+          ],
+          "description": "%config.stagingGuard.types.desc%"
         }
       }
     }
