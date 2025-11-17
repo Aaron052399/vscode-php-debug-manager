@@ -49,7 +49,7 @@ export class DebugScanner {
 
   private loadConfiguration(): void {
     const config = vscode.workspace.getConfiguration('phpDebugManager');
-    this.maxFileSize = config.get('maxFileSize', 1048576);
+    this.maxFileSize = config.get<number>('maxFileSize', 10485760);
     this.excludePatterns = config.get<string[]>('excludePatterns', []);
     this.excludeRegexes = this.excludePatterns.map(p => this.globToRegExp(p));
   }
