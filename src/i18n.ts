@@ -56,9 +56,15 @@ const dict: Record<Locale, Record<string, string>> = {
     'btn.clear.all': 'Clear All',
 
     'menu.open.settings.exclude': '[Config] Open exclude settings',
-    'menu.config.patterns': '[Config] Open custom pattern settings',
 
     'badge.debug.total.tooltip': 'Total debug statements',
+
+    'filter.pick.placeholder': 'Select types to hide',
+    'filter.applied': 'Filter applied',
+    'filter.cleared': 'Filter cleared',
+
+    'staging.types.pick.placeholder': 'Select guard types to intercept',
+    'staging.types.applied': 'Guard types updated',
 
     'open.file.failed': 'Failed to open file: {0}',
     'line': 'line',
@@ -117,9 +123,15 @@ const dict: Record<Locale, Record<string, string>> = {
     'btn.clear.all': '全部清除',
 
     'menu.open.settings.exclude': '[配置] 打开排除路径设置',
-    'menu.config.patterns': '[配置] 打开自定义模式配置',
 
     'badge.debug.total.tooltip': '调试语句总数',
+
+    'filter.pick.placeholder': '选择需要屏蔽的类型',
+    'filter.applied': '筛选已应用',
+    'filter.cleared': '已清除筛选',
+
+    'staging.types.pick.placeholder': '选择需要拦截的调试语句类型',
+    'staging.types.applied': '阶段防护拦截类型已更新',
 
     'open.file.failed': '无法打开文件: {0}',
     'line': 'line',
