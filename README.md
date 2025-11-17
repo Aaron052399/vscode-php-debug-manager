@@ -8,14 +8,18 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 ### Scanning
 - Automatically scans PHP files
 - Supports multiple patterns: `var_dump`, `print_r`, `error_log`, `debug_backtrace`, etc.
-- Custom patterns
-- Tree view: file → line → content
+  - Tree view: file → line → content
 
 ### Interactions
 - Jump to location
 - Clear statements (single/file/global; bookmarked items are protected)
 - Expand/collapse
 - Reveal in Manager from SCM warning dialog
+
+### Filtering
+- View-level filter with funnel button to hide selected built-in debug types
+- Selection persists per workspace;
+- Types are system-provided (non-editable): `var_dump`, `print_r`, `echo`, `print`, `var_export`, `printf`, `die`, `exit`, `error_log`, `trigger_error`, `user_error`, `debug_backtrace`, `dump`, `dd`, `xdebug_var_dump`, `xdebug_debug_zval`, `xdebug_break`
 
 ### Monitoring
 - Auto refresh on file changes
@@ -27,6 +31,8 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
   - warn: unstage first, require “Continue” to re-stage; supports “Reveal Location” and “Reveal in Manager”
   - lenient: log only
 - Configurable and enabled by default (strict)
+- Intercept types can be configured; strict and warn modes respect your selection
+- Command: `phpDebugManager.stagingGuard.configureTypes` (shield icon) opens a multi-select for built-in types
 
 ### VarDumper Tool (featured)
 - Shortcut: mac `cmd+shift+/`, win/linux `ctrl+shift+/`
@@ -36,12 +42,16 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 ### Configuration (example)
 ```json
 {
-  "phpDebugManager.customPatterns": ["var_dump", "print_r", "error_log", "debug_backtrace", "die", "exit"],
   "phpDebugManager.autoScan": true,
   "phpDebugManager.scanOnStartup": true,
   "phpDebugManager.showStatusBar": true,
   "phpDebugManager.stagingGuard.enabled": true,
   "phpDebugManager.stagingGuard.mode": "strict",
+  "phpDebugManager.stagingGuard.types": [
+    "var_dump","print_r","echo","print","var_export","printf",
+    "die","exit","error_log","trigger_error","user_error",
+    "debug_backtrace","dump","dd","xdebug_var_dump","xdebug_debug_zval","xdebug_break"
+  ],
   "phpDebugManager.language": "system"
 }
 ```
@@ -60,6 +70,8 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 | `phpDebugManager.debugManager.clearAll` | - | Clear all statements |
 | `phpDebugManager.debugManager.export` | - | Export list |
 | `phpDebugManager.debugManager.scanNow` | - | Scan now |
+| `phpDebugManager.filterTypes` | - | Filter displayed debug types (view funnel) |
+| `phpDebugManager.stagingGuard.configureTypes` | - | Configure guard intercept types (strict/warn) |
 
 ## Performance (example projects)
 - Scan < 2s for 1000+ files

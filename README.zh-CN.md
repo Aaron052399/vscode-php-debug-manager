@@ -8,14 +8,18 @@
 ### 🔍 智能扫描
 - 自动扫描项目中的所有 PHP 文件
 - 识别多种调试语句：`var_dump`、`print_r`、`error_log`、`debug_backtrace` 等
-- 支持自定义调试语句模式
-- 树状层级展示：文件路径 → 行号 → 调试内容
+  - 树状层级展示：文件路径 → 行号 → 调试内容
 
 ### 🎯 交互操作
 - **快速跳转**：点击条目直接定位到对应文件的指定行
 - **一键清除**：支持单个、按文件、全局批量清除调试语句（书签项保护，不被清除）
 - **展开/折叠**：灵活的树状结构展示
 - **上下文显示**：显示调试语句周围的代码片段
+
+### 🔎 筛选视图
+- 标题栏漏斗按钮，按类型隐藏调试语句，仅影响视图显示
+- 筛选结果按工作区保存
+- 可选类型为系统内置（不可编辑）：`var_dump`、`print_r`、`echo`、`print`、`var_export`、`printf`、`die`、`exit`、`error_log`、`trigger_error`、`user_error`、`debug_backtrace`、`dump`、`dd`、`xdebug_var_dump`、`xdebug_debug_zval`、`xdebug_break`
 
 ### 🚀 实时监控
 - 文件变化自动检测和更新
@@ -28,6 +32,8 @@
   - 警告 warn：先撤销暂存，弹窗“继续/查看位置/在管理器中查看”，点“继续”才允许重新暂存
   - 宽松 lenient：仅记录日志，不影响暂存
 - 可在设置中启用/关闭并切换模式，默认严格模式
+- 支持选择“拦截类型”，严格/警告模式只对已选择类型进行拦截
+- 命令：`phpDebugManager.stagingGuard.configureTypes`（盾牌图标）弹出内置类型多选框进行设置
 
 ### 🧩 VarDumper 快捷工具（附带）
 - 快捷键：mac `cmd+shift+/`，win/linux `ctrl+shift+/`
@@ -67,6 +73,8 @@
 | `phpDebugManager.debugManager.clearAll` | - | 清除所有调试语句 |
 | `phpDebugManager.debugManager.export` | - | 导出调试语句清单 |
 | `phpDebugManager.debugManager.scanNow` | - | 立即扫描调试语句 |
+| `phpDebugManager.filterTypes` | - | 视图漏斗筛选显示的调试语句类型 |
+| `phpDebugManager.stagingGuard.configureTypes` | - | 配置阶段防护拦截类型（严格/警告） |
 
 ## ⚙️ 配置选项（示例）
 
@@ -74,30 +82,27 @@
 
 ```json
 {
-  "phpDebugManager.customPatterns": [
-    "var_dump",
-    "print_r",
-    "error_log",
-    "debug_backtrace",
-    "die",
-    "exit"
-  ],
   "phpDebugManager.autoScan": true,
   "phpDebugManager.scanOnStartup": true,
   "phpDebugManager.showStatusBar": true,
   "phpDebugManager.stagingGuard.enabled": true,
   "phpDebugManager.stagingGuard.mode": "strict",
+  "phpDebugManager.stagingGuard.types": [
+    "var_dump","print_r","echo","print","var_export","printf",
+    "die","exit","error_log","trigger_error","user_error",
+    "debug_backtrace","dump","dd","xdebug_var_dump","xdebug_debug_zval","xdebug_break"
+  ],
   "phpDebugManager.language": "system"
 }
 ```
 
 ### 配置说明
 
-- `phpDebugManager.customPatterns`: 自定义调试语句匹配模式
 - `phpDebugManager.autoScan`: 是否启用自动扫描
 - `phpDebugManager.scanOnStartup`: 启动时是否自动扫描
 - `phpDebugManager.showStatusBar`: 是否在状态栏显示调试信息
 - `phpDebugManager.stagingGuard.*`: 暂存守卫开关与模式
+- `phpDebugManager.stagingGuard.types`: 严格/警告模式下需要拦截的调试语句类型（默认全选）
 - `phpDebugManager.language`: 运行时语言（system/en/zh-cn）
 
 ## 🎯 使用场景
