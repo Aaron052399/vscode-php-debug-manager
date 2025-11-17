@@ -34,6 +34,7 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
   private bookmarks: Set<string> = new Set();
   private viewMode: 'nested' | 'flat' = 'nested';
   private output?: vscode.OutputChannel;
+  private disabledTypes: Set<DebugStatement['type']> = new Set();
 
   constructor(context: vscode.ExtensionContext, output?: vscode.OutputChannel) {
     this.scanner = new DebugScanner();
@@ -119,13 +120,18 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
   }
 
   private updateTreeData(result: ScanResult): void {
-    this.lastScanResult = result;
+    const filtered = result.statements.filter(s => !this.disabledTypes.has(s.type));
+    this.lastScanResult = {
+      ...result,
+      statements: filtered,
+      totalStatements: filtered.length
+    };
     // 数据变化时清空缓存，确保 getChildren 返回最新数据
     this.resultCache.clear();
     
     const fileGroups = new Map<string, DebugStatement[]>();
     
-    result.statements.forEach(statement => {
+    this.lastScanResult.statements.forEach(statement => {
       if (!fileGroups.has(statement.filePath)) {
         fileGroups.set(statement.filePath, []);
       }
@@ -469,13 +475,17 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
     this.refresh();
   }
 
-  public updateScannerPatterns(customPatterns?: string[]): void {
-    this.scanner.updatePatterns(customPatterns);
-  }
-
   public reloadScannerConfig(): void {
     if ((this.scanner as any).reloadConfiguration) {
       (this.scanner as any).reloadConfiguration();
+    }
+  }
+
+  public setDisabledTypes(types: DebugStatement['type'][]): void {
+    this.disabledTypes = new Set(types);
+    if (this.lastScanResult) {
+      this.updateTreeData(this.lastScanResult);
+      this.refresh();
     }
   }
 
