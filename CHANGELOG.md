@@ -4,6 +4,10 @@
 
 ## English
 
+### 1.0.5 - 2025-11-17
+- Added Debug Manager view filter (funnel) to hide selected built-in debug types
+- Added staging guard types configuration and command to choose intercept types (strict/warn)
+
 ### 1.0.4 - 2025-11-14
 - Fixed some scanning performance issues
 
@@ -20,6 +24,10 @@
 - Initial version with Debug Manager and VarDumper tool
 
 ## 简体中文
+
+### 1.0.5 - 2025-11-17
+- 新增 Debug Manager 漏斗筛选，按内置类型隐藏视图调试语句
+- 新增阶段防护拦截类型配置与命令，严格/警告模式按所选类型拦截
 
 ### 1.0.4 - 2025-11-14
 - 修复了一些扫描的性能问题
