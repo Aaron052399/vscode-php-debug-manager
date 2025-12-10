@@ -5,6 +5,12 @@ import { t } from './i18n';
 
 type Mode = 'strict' | 'warn' | 'lenient';
 
+const DEFAULT_DEBUG_TYPES = [
+  'var_dump', 'print_r', 'echo', 'print', 'var_export', 'printf',
+  'die', 'exit', 'error_log', 'trigger_error', 'user_error',
+  'debug_backtrace', 'dump', 'dd', 'xdebug_var_dump', 'xdebug_debug_zval', 'xdebug_break'
+];
+
 export class StagingGuard {
   private scanner: DebugScanner;
   private output: vscode.OutputChannel;
@@ -25,6 +31,24 @@ export class StagingGuard {
   dispose(): void {
     this.stop();
   }
+  
+  private groupUrisByRoot(uris: vscode.Uri[], api?: any): Map<string, vscode.Uri[]> {
+    const byRoot = new Map<string, vscode.Uri[]>();
+    for (const u of uris) {
+      let root: string;
+      if (api && api.repositories && api.repositories.length > 0) {
+        const repo = api.repositories.find((r: any) => u.fsPath.startsWith(r.rootUri.fsPath));
+        root = repo ? repo.rootUri.fsPath : api.repositories[0].rootUri.fsPath;
+      } else {
+        root = vscode.workspace.getWorkspaceFolder(u)?.uri.fsPath || (vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd());
+      }
+      const list = byRoot.get(root) || [];
+      list.push(u);
+      byRoot.set(root, list);
+    }
+    return byRoot;
+  }
+
   private async unstage(uris: vscode.Uri[]): Promise<void> {
     if (uris.length > 0) {
       try {
@@ -36,18 +60,10 @@ export class StagingGuard {
       await vscode.commands.executeCommand('git.unstageAll');
       return;
     } catch {}
-    const gitExt = vscode.extensions.getExtension('vscode.git');
-    const api: any = gitExt && gitExt.isActive ? (gitExt.exports && gitExt.exports.getAPI ? gitExt.exports.getAPI(1) : null) : null;
+    const api = await this.getGitApi();
     if (api && api.repositories && api.repositories.length > 0) {
       try {
-        const byRoot = new Map<string, vscode.Uri[]>();
-        for (const u of uris) {
-          const repo = api.repositories.find((r: any) => u.fsPath.startsWith(r.rootUri.fsPath));
-          const root = repo ? repo.rootUri.fsPath : api.repositories[0].rootUri.fsPath;
-          const list = byRoot.get(root) || [];
-          list.push(u);
-          byRoot.set(root, list);
-        }
+        const byRoot = this.groupUrisByRoot(uris, api);
         for (const [root, list] of byRoot) {
           const args = ['reset', '-q', 'HEAD', '--', ...list.map(u => u.fsPath)];
           await new Promise<void>((resolve) => {
@@ -61,37 +77,23 @@ export class StagingGuard {
   }
 
   private async stage(uris: vscode.Uri[]): Promise<void> {
-    const gitExt = vscode.extensions.getExtension('vscode.git');
-    const api: any = gitExt && gitExt.isActive ? (gitExt.exports && gitExt.exports.getAPI ? gitExt.exports.getAPI(1) : null) : null;
+    const api = await this.getGitApi();
     if (api && api.repositories && api.repositories.length > 0) {
       try {
-        const byRoot = new Map<string, string[]>();
-        for (const u of uris) {
-          const repo = api.getRepository ? api.getRepository(u) : api.repositories.find((r: any) => u.fsPath.startsWith(r.rootUri.fsPath));
-          const root = repo ? repo.rootUri.fsPath : api.repositories[0].rootUri.fsPath;
-          const list = byRoot.get(root) || [];
-          list.push(u.fsPath);
-          byRoot.set(root, list);
-        }
+        const byRoot = this.groupUrisByRoot(uris, api);
         for (const [root, list] of byRoot) {
           const repo = api.repositories.find((r: any) => r.rootUri.fsPath === root) || api.repositories[0];
-          await repo.add(list);
+          await repo.add(list.map(u => u.fsPath));
         }
         return;
       } catch {}
     }
     // Fallback to CLI
     try {
-      const byRoot = new Map<string, string[]>();
-      for (const u of uris) {
-        const ws = vscode.workspace.getWorkspaceFolder(u)?.uri.fsPath || (vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd());
-        const list = byRoot.get(ws) || [];
-        list.push(u.fsPath);
-        byRoot.set(ws, list);
-      }
+      const byRoot = this.groupUrisByRoot(uris);
       for (const [root, list] of byRoot) {
         await new Promise<void>((resolve) => {
-          const p = cp.spawn('git', ['add', '--', ...list], { cwd: root });
+          const p = cp.spawn('git', ['add', '--', ...list.map(u => u.fsPath)], { cwd: root });
           p.on('exit', () => resolve());
           p.on('error', () => resolve());
         });
@@ -119,8 +121,12 @@ export class StagingGuard {
         const current = new Set<string>((repo.state?.indexChanges || []).map((c: any) => c.uri.fsPath));
         const prev = this.prevStaged.get(root) || new Set<string>();
         const newly: string[] = [];
-        for (const p of Array.from(current)) { if (!prev.has(p)) newly.push(p); }
-        if (newly.length > 0) { try { this.output.appendLine(`[Guard] newly staged: ${newly.join(', ')}`); } catch {} }
+        for (const p of current) {
+          if (!prev.has(p)) newly.push(p);
+        }
+        if (newly.length > 0) {
+          this.output.appendLine(`[暂存守卫] 新增暂存: ${newly.join(', ')}`);
+        }
         this.prevStaged.set(root, current);
         if (newly.length === 0) return;
         const cfg = vscode.workspace.getConfiguration('phpDebugManager');
@@ -128,9 +134,7 @@ export class StagingGuard {
         if (!enabled) return;
         const mode = cfg.get<Mode>('stagingGuard.mode', 'strict');
         const result = await this.scanner.scanFiles(newly);
-        const types = vscode.workspace.getConfiguration('phpDebugManager').get<string[]>('stagingGuard.types', [
-          'var_dump','print_r','echo','print','var_export','printf','die','exit','error_log','trigger_error','user_error','debug_backtrace','dump','dd','xdebug_var_dump','xdebug_debug_zval','xdebug_break'
-        ]);
+        const types = vscode.workspace.getConfiguration('phpDebugManager').get<string[]>('stagingGuard.types', DEFAULT_DEBUG_TYPES);
         const selected = new Set<string>(types || []);
         const filtered = result.statements.filter(s => selected.has(s.type));
         if (filtered.length <= 0) return;
@@ -181,13 +185,15 @@ export class StagingGuard {
           if (!enabled) return;
           const mode = cfg.get<Mode>('stagingGuard.mode', 'strict');
           const result = await this.scanner.scanFiles(newly);
-          const types = vscode.workspace.getConfiguration('phpDebugManager').get<string[]>('stagingGuard.types', [
-            'var_dump','print_r','echo','print','var_export','printf','die','exit','error_log','trigger_error','user_error','debug_backtrace','dump','dd','xdebug_var_dump','xdebug_debug_zval','xdebug_break'
-          ]);
+          const types = vscode.workspace.getConfiguration('phpDebugManager').get<string[]>('stagingGuard.types', DEFAULT_DEBUG_TYPES);
           const selected = new Set<string>(types || []);
           const filtered = result.statements.filter(s => selected.has(s.type));
           if (filtered.length <= 0) return;
-          if (mode === 'strict') { vscode.window.showErrorMessage(t('guard.strict.blocked'), { modal: true }); await this.unstage(newly.map(p => vscode.Uri.file(p))); return; }
+          if (mode === 'strict') {
+            vscode.window.showErrorMessage(t('guard.strict.blocked'), { modal: true });
+            await this.unstage(newly.map(p => vscode.Uri.file(p)));
+            return;
+          }
           if (mode === 'warn') {
             const count = filtered.length;
             await this.unstage(newly.map(p => vscode.Uri.file(p)));
