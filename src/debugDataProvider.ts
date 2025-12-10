@@ -156,37 +156,10 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
 
     const dirNodeMap = new Map<string, TreeNode>();
     Array.from(fileGroups.entries()).sort(([a], [b]) => a.localeCompare(b)).forEach(([filePath, statements]) => {
+      let fileParent: TreeNode;
+      
       if (this.viewMode === 'flat') {
-        const fileName = path.basename(filePath);
-        const fileNode: TreeNode = {
-          id: `file-${filePath}`,
-          label: fileName,
-          type: 'file',
-          iconPath: new vscode.ThemeIcon('file'),
-          collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-          contextValue: 'debugFile',
-          resourceUri: vscode.Uri.file(filePath),
-          filePath: filePath,
-          parent: rootNode,
-          children: []
-        };
-        statements.forEach(statement => {
-          const statementNode: TreeNode = {
-            id: `statement-${statement.id}`,
-            label: `${t('line')} ${statement.lineNumber}: ${statement.content}`,
-            type: 'statement',
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            contextValue: this.isBookmarked(statement.id) ? 'bookmarkedStatement' : 'debugStatement',
-            debugStatement: statement,
-            filePath: statement.filePath,
-            lineNumber: statement.lineNumber,
-            bookmarked: this.isBookmarked(statement.id),
-            parent: fileNode,
-            command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [statement] }
-          };
-          fileNode.children!.push(statementNode);
-        });
-        rootNode.children!.push(fileNode);
+        fileParent = rootNode;
       } else {
         const ws = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath || '';
         const dirPath = path.dirname(filePath);
@@ -216,37 +189,40 @@ export class DebugDataProvider implements vscode.TreeDataProvider<TreeNode> {
           }
           parentNode = folderNode;
         }
-        const fileName = path.basename(filePath);
+        fileParent = parentNode;
+      }
+      
+      const fileName = path.basename(filePath);
       const fileNode: TreeNode = {
         id: `file-${filePath}`,
         label: fileName,
         type: 'file',
         iconPath: new vscode.ThemeIcon('file'),
         collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-        contextValue: this.scanner.isExcluded(filePath) ? 'excludedFile' : 'debugFile',
+        contextValue: this.viewMode === 'flat' ? 'debugFile' : (this.scanner.isExcluded(filePath) ? 'excludedFile' : 'debugFile'),
         resourceUri: vscode.Uri.file(filePath),
         filePath: filePath,
-        parent: parentNode,
+        parent: fileParent,
         children: []
       };
-        statements.forEach(statement => {
-          const statementNode: TreeNode = {
-            id: `statement-${statement.id}`,
-            label: `${t('line')} ${statement.lineNumber}: ${statement.content}`,
-            type: 'statement',
-            collapsibleState: vscode.TreeItemCollapsibleState.None,
-            contextValue: this.isBookmarked(statement.id) ? 'bookmarkedStatement' : 'debugStatement',
-            debugStatement: statement,
-            filePath: statement.filePath,
-            lineNumber: statement.lineNumber,
-            bookmarked: this.isBookmarked(statement.id),
-            parent: fileNode,
-            command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [statement] }
-          };
-          fileNode.children!.push(statementNode);
-        });
-        parentNode.children!.push(fileNode);
-      }
+      
+      statements.forEach(statement => {
+        const statementNode: TreeNode = {
+          id: `statement-${statement.id}`,
+          label: `${t('line')} ${statement.lineNumber}: ${statement.content}`,
+          type: 'statement',
+          collapsibleState: vscode.TreeItemCollapsibleState.None,
+          contextValue: this.isBookmarked(statement.id) ? 'bookmarkedStatement' : 'debugStatement',
+          debugStatement: statement,
+          filePath: statement.filePath,
+          lineNumber: statement.lineNumber,
+          bookmarked: this.isBookmarked(statement.id),
+          parent: fileNode,
+          command: { command: 'phpDebugManager.openStatement', title: '打开', arguments: [statement] }
+        };
+        fileNode.children!.push(statementNode);
+      });
+      fileParent.children!.push(fileNode);
     });
 
     rootNodes.push(rootNode);
