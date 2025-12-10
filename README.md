@@ -6,9 +6,10 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 ## Features
 
 ### Scanning
-- Automatically scans PHP files
+- Automatically scans PHP files using AST parsing (php-parser) for accurate detection
 - Supports multiple patterns: `var_dump`, `print_r`, `error_log`, `debug_backtrace`, etc.
   - Tree view: file → line → content
+- Precisely identifies debug statements, avoiding false positives in strings and comments
 
 ### Interactions
 - Jump to location
@@ -37,6 +38,7 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 ### VarDumper Tool (featured)
 - Shortcut: mac `cmd+shift+/`, win/linux `ctrl+shift+/`
 - Smart insertion after semicolon or into empty block, matching indentation
+- AST-based expression validation for variables and function calls
 - Avoids arrays/argument lists; warns and skips in strings or incomplete selections
 
 ### Configuration (example)
@@ -78,6 +80,8 @@ A VS Code extension focused on managing debug statements in PHP. The main featur
 - Low memory footprint during scan
 
 ## Implementation (overview)
+- **AST-based scanning**: Uses `php-parser` for precise PHP syntax analysis
+- Core components: `DebugScanner`, `DebugDataProvider`, `DebugManagerView`, `PhpAstParser`
 - Efficient file filtering and caching; incremental scan
 - Output logs for scan duration and results; guard integrates with repository state changes
 
