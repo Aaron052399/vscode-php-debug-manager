@@ -4,6 +4,14 @@
 
 ## English
 
+### 1.1.0 - 2025-12-10
+- **Major**: Replaced regex-based scanning with PHP AST parsing (using `php-parser`)
+- Added new `phpAstParser.ts` module for accurate PHP syntax analysis
+- Improved debug statement detection accuracy, avoiding false positives in strings and comments
+- Optimized bracket matching and statement boundary detection using AST
+- Simplified VarDumper insertion logic with AST-based validation
+- Code cleanup and formatting improvements
+
 ### 1.0.6 - 2025-11-17
 - Scanner now reads `maxFileSize` and `excludePatterns` strictly from settings (no hardcoded defaults)
 - Configuration changes reliably reload and apply during scans
@@ -28,6 +36,14 @@
 - Initial version with Debug Manager and VarDumper tool
 
 ## 简体中文
+
+### 1.1.0 - 2025-12-10
+- **重大更新**：使用 PHP AST 解析器（php-parser）替代正则表达式进行调试语句扫描
+- 新增 `phpAstParser.ts` 模块，封装 PHP 语法树解析功能
+- 提升调试语句检测准确性，避免字符串和注释内的误报
+- 使用 AST 优化括号匹配和语句边界检测
+- 简化 VarDumper 插入逻辑，采用 AST 进行表达式验证
+- 代码清理与格式优化
 
 ### 1.0.6 - 2025-11-17
 - 扫描器严格从设置读取 `maxFileSize` 与 `excludePatterns`（无代码默认值）
