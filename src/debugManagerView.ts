@@ -160,7 +160,7 @@ export class DebugManagerView {
   private bookmarksProvider: BookmarksDataProvider;
   private statusBarItem: vscode.StatusBarItem;
   private disposables: vscode.Disposable[] = [];
-  private updateQueue: (() => void)[] = [];
+  private updateQueue: (() => Promise<void>)[] = [];
   private updateTimer: NodeJS.Timeout | undefined;
   private isUpdating: boolean = false;
   private context: vscode.ExtensionContext;
@@ -299,20 +299,20 @@ export class DebugManagerView {
     vscode.commands.registerCommand('phpDebugManager.debugManager.clearStatement', async (node: TreeNode) => {
       if (node.type === 'statement' && node.debugStatement) {
         this.queueUpdate(() => this.clearStatement(node.debugStatement!));
-        this.output.appendLine(`[Clean] Clear statement: ${node.debugStatement.filePath}:${node.debugStatement.lineNumber}`);
+        this.output.appendLine(`[清除] 清除调试语句: ${node.debugStatement.filePath}:${node.debugStatement.lineNumber}`);
       }
     });
 
     vscode.commands.registerCommand('phpDebugManager.debugManager.clearFile', async (node: TreeNode) => {
       if (node.type === 'file' && node.filePath) {
         this.queueUpdate(() => this.clearFile(node.filePath!));
-        this.output.appendLine(`[Clean] Clear file statements: ${node.filePath}`);
+        this.output.appendLine(`[清除] 清除文件调试语句: ${node.filePath}`);
       }
     });
 
     vscode.commands.registerCommand('phpDebugManager.clearAll', async () => {
       this.queueUpdate(() => this.clearAll());
-      this.output.appendLine('[Clean] Clear all debug statements');
+      this.output.appendLine('[清除] 清除所有调试语句');
     });
 
     // 书签相关命令
@@ -336,12 +336,12 @@ export class DebugManagerView {
     // 批量操作命令
     vscode.commands.registerCommand('phpDebugManager.exportList', () => {
       this.exportStatementList();
-      this.output.appendLine('[Export] Export debug statements (txt)');
+      this.output.appendLine('[\u5bfc\u51fa] \u5bfc\u51fa\u8c03\u8bd5\u8bed\u53e5\u5217\u8868 (txt)');
     });
 
     vscode.commands.registerCommand('phpDebugManager.exportListAs', () => {
       this.exportStatementListAs();
-      this.output.appendLine('[Export] Export debug statements (select format)');
+      this.output.appendLine('[\u5bfc\u51fa] \u5bfc\u51fa\u8c03\u8bd5\u8bed\u53e5\u5217\u8868 (\u4e0d\u540c\u683c\u5f0f)');
     });
 
     vscode.commands.registerCommand('phpDebugManager.revealFileInManager', async (filePath: string, line?: number) => {
@@ -438,11 +438,11 @@ export class DebugManagerView {
   }
 
   private queueUpdate(updateFn: () => Promise<void> | void): void {
-    this.updateQueue.push(() => {
+    this.updateQueue.push(async () => {
       try {
         const result = updateFn();
         if (result instanceof Promise) {
-          return result;
+          await result;
         }
       } catch (error) {
         console.error('更新操作失败:', error);
@@ -642,56 +642,19 @@ export class DebugManagerView {
 
   private async exportStatementList(): Promise<void> {
     const statements = this.dataProvider.getAllStatements();
-    
-    if (statements.length === 0) {
-      vscode.window.showInformationMessage(t('export.none'));
-      return;
-    }
+    if (!(await this.checkStatementsForExport(statements))) return;
 
     const content = this.generateExportContent(statements);
-    
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const d = new Date();
-    const ts = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-    const defaultNameTxt = `debug-statements-${ts}.txt`;
-    const defaultPath = workspaceRoot ? path.join(workspaceRoot, defaultNameTxt) : undefined;
-    const saveOptions: vscode.SaveDialogOptions = {
-      filters: {
-        'Text Files': ['txt'],
-        'All Files': ['*']
-      }
-    };
-    if (defaultPath) {
-      saveOptions.defaultUri = vscode.Uri.file(defaultPath);
-    }
-    const uri = await vscode.window.showSaveDialog(saveOptions);
-
-    if (uri) {
-      try {
-        await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
-        vscode.window.showInformationMessage(t('export.saved', uri.fsPath));
-        this.output.appendLine(`[导出] 已保存: ${uri.fsPath}`);
-        try {
-          const doc = await vscode.workspace.openTextDocument(uri);
-          await vscode.window.showTextDocument(doc, { preview: false });
-        } catch (openErr) {
-          vscode.window.showWarningMessage(t('export.saved.openFailed', String(openErr)), { modal: true });
-          this.output.appendLine(`[导出] 文件已保存但打开失败: ${String(openErr)}`);
-        }
-      } catch (error) {
-        vscode.window.showErrorMessage(t('export.failed', String(error)), { modal: true });
-        this.output.appendLine(t('export.failed', String(error)));
-      }
-    }
+    const defaultNameTxt = `debug-statements-${this.generateTimestamp()}.txt`;
+    await this.saveExportFile(content, defaultNameTxt, {
+      'Text Files': ['txt'],
+      'All Files': ['*']
+    });
   }
 
   private async exportStatementListAs(): Promise<void> {
     const statements = this.dataProvider.getAllStatements();
-    if (statements.length === 0) {
-      vscode.window.showInformationMessage(t('export.none'));
-      return;
-    }
+    if (!(await this.checkStatementsForExport(statements))) return;
 
     const config = vscode.workspace.getConfiguration('phpDebugManager');
     const defaultFormat = config.get<string>('export.defaultFormat', 'md');
@@ -725,47 +688,19 @@ export class DebugManagerView {
     if (fieldsPick === undefined) {
       return;
     }
-    const fields = (fieldsPick.length > 0)
-      ? fieldsPick.map(f => f.label)
-      : defaultFields;
+    const fields = (fieldsPick.length > 0) ? fieldsPick.map(f => f.label) : defaultFields;
 
     const content = this.generateExportContentByFormat(format, fields, statements);
-
-    const pad2 = (n: number) => String(n).padStart(2, '0');
-    const d2 = new Date();
-    const ts2 = `${d2.getFullYear()}${pad2(d2.getMonth() + 1)}${pad2(d2.getDate())}-${pad2(d2.getHours())}${pad2(d2.getMinutes())}${pad2(d2.getSeconds())}`;
-    const defaultName = format === 'csv' ? `debug-statements-${ts2}.csv`
-      : format === 'json' ? `debug-statements-${ts2}.json`
-      : `debug-statements-${ts2}.md`;
-
+    const defaultName = format === 'csv' ? `debug-statements-${this.generateTimestamp()}.csv`
+      : format === 'json' ? `debug-statements-${this.generateTimestamp()}.json`
+      : `debug-statements-${this.generateTimestamp()}.md`;
     const filters = format === 'csv'
       ? { 'CSV Files': ['csv'], 'All Files': ['*'] }
       : format === 'json'
         ? { 'JSON Files': ['json'], 'All Files': ['*'] }
         : { 'Markdown Files': ['md'], 'All Files': ['*'] };
 
-    const workspaceRoot2 = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    const defaultPath2 = workspaceRoot2 ? path.join(workspaceRoot2, defaultName) : undefined;
-    const saveOptions2: vscode.SaveDialogOptions = { filters };
-    if (defaultPath2) {
-      saveOptions2.defaultUri = vscode.Uri.file(defaultPath2);
-    }
-    const uri = await vscode.window.showSaveDialog(saveOptions2);
-
-    if (uri) {
-      try {
-        await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
-        vscode.window.showInformationMessage(t('export.saved', uri.fsPath));
-        try {
-          const doc = await vscode.workspace.openTextDocument(uri);
-          await vscode.window.showTextDocument(doc, { preview: false });
-        } catch (openErr) {
-          vscode.window.showWarningMessage(t('export.saved.openFailed', String(openErr)));
-        }
-      } catch (error) {
-        vscode.window.showErrorMessage(t('export.failed', String(error)));
-      }
-    }
+    await this.saveExportFile(content, defaultName, filters);
   }
 
   private generateExportContentByFormat(format: 'csv' | 'json' | 'md', fields: string[], statements: DebugStatement[]): string {
@@ -975,6 +910,48 @@ export class DebugManagerView {
   public dispose(): void {
     this.dataProvider.dispose();
     this.statusBarItem.dispose();
+  }
+
+  private generateTimestamp(): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = new Date();
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+
+  private async checkStatementsForExport(statements: DebugStatement[]): Promise<boolean> {
+    if (statements.length === 0) {
+      vscode.window.showInformationMessage(t('export.none'));
+      return false;
+    }
+    return true;
+  }
+
+  private async saveExportFile(content: string, defaultName: string, filters?: vscode.SaveDialogOptions['filters']): Promise<void> {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const defaultPath = workspaceRoot ? path.join(workspaceRoot, defaultName) : undefined;
+    const saveOptions: vscode.SaveDialogOptions = { filters };
+    if (defaultPath) {
+      saveOptions.defaultUri = vscode.Uri.file(defaultPath);
+    }
+    const uri = await vscode.window.showSaveDialog(saveOptions);
+
+    if (uri) {
+      try {
+        await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
+        vscode.window.showInformationMessage(t('export.saved', uri.fsPath));
+        this.output.appendLine(`[导出] 已保存: ${uri.fsPath}`);
+        try {
+          const doc = await vscode.workspace.openTextDocument(uri);
+          await vscode.window.showTextDocument(doc, { preview: false });
+        } catch (openErr) {
+          vscode.window.showWarningMessage(t('export.saved.openFailed', String(openErr)), { modal: true });
+          this.output.appendLine(`[导出] 文件已保存但打开失败: ${String(openErr)}`);
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage(t('export.failed', String(error)), { modal: true });
+        this.output.appendLine(t('export.failed', String(error)));
+      }
+    }
   }
 
   private async expandAllTree(
