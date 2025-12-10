@@ -24,8 +24,6 @@
   "activationEvents": [
     "onLanguage:php",
     "onStartupFinished",
-    "onCommand:phpDebugManager.dumpVariable",
-    "onView:phpDebugManager",
     "workspaceContains:**/*.php"
   ],
   "main": "./out/extension.js",
@@ -186,22 +184,19 @@
         "title": "%cmd.bookmarks.expandAll.title%",
         "category": "PHP Debug Manager",
         "icon": "$(expand-all)"
-      }
-      ,
+      },
       {
         "command": "phpDebugManager.bookmarks.toggleExpandCollapse.collapse",
         "title": "%cmd.bookmarks.collapseAll.title%",
         "category": "PHP Debug Manager",
         "icon": "$(collapse-all)"
-      }
-      ,
+      },
       {
         "command": "phpDebugManager.filterTypes",
         "title": "%cmd.filterTypes.title%",
         "category": "PHP Debug Manager",
         "icon": "$(filter)"
-      }
-      ,
+      },
       {
         "command": "phpDebugManager.stagingGuard.configureTypes",
         "title": "%cmd.stagingGuard.configureTypes.title%",
@@ -306,8 +301,7 @@
           "command": "phpDebugManager.bookmarks.toggleExpandCollapse.expand",
           "when": "view == phpDebugBookmarks && !phpDebugManager.bookmarksExpanded",
           "group": "navigation"
-        }
-        ,
+        },
         {
           "command": "phpDebugManager.bookmarks.toggleExpandCollapse.collapse",
           "when": "view == phpDebugBookmarks && phpDebugManager.bookmarksExpanded",
@@ -429,13 +423,21 @@
         },
         "phpDebugManager.stagingGuard.mode": {
           "type": "string",
-          "enum": ["strict", "warn", "lenient"],
+          "enum": [
+            "strict",
+            "warn",
+            "lenient"
+          ],
           "default": "strict",
           "description": "%config.stagingGuard.mode.desc%"
         },
         "phpDebugManager.language": {
           "type": "string",
-          "enum": ["system", "en", "zh-cn"],
+          "enum": [
+            "system",
+            "en",
+            "zh-cn"
+          ],
           "default": "system",
           "description": "%config.language.desc%"
         },
@@ -480,7 +482,11 @@
         },
         "phpDebugManager.export.defaultFormat": {
           "type": "string",
-          "enum": ["csv", "json", "md"],
+          "enum": [
+            "csv",
+            "json",
+            "md"
+          ],
           "default": "md",
           "description": "%config.export.defaultFormat.desc%"
         },
@@ -488,26 +494,64 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["file", "line", "type", "text", "severity"]
+            "enum": [
+              "file",
+              "line",
+              "type",
+              "text",
+              "severity"
+            ]
           },
-          "default": ["file", "line", "type", "text"],
+          "default": [
+            "file",
+            "line",
+            "type",
+            "text"
+          ],
           "description": "%config.export.fields.desc%"
-        }
-        ,
+        },
         "phpDebugManager.stagingGuard.types": {
           "type": "array",
           "items": {
             "type": "string",
             "enum": [
-              "var_dump","print_r","echo","print","var_export","printf",
-              "die","exit","error_log","trigger_error","user_error",
-              "debug_backtrace","dump","dd","xdebug_var_dump","xdebug_debug_zval","xdebug_break"
+              "var_dump",
+              "print_r",
+              "echo",
+              "print",
+              "var_export",
+              "printf",
+              "die",
+              "exit",
+              "error_log",
+              "trigger_error",
+              "user_error",
+              "debug_backtrace",
+              "dump",
+              "dd",
+              "xdebug_var_dump",
+              "xdebug_debug_zval",
+              "xdebug_break"
             ]
           },
           "default": [
-            "var_dump","print_r","echo","print","var_export","printf",
-            "die","exit","error_log","trigger_error","user_error",
-            "debug_backtrace","dump","dd","xdebug_var_dump","xdebug_debug_zval","xdebug_break"
+            "var_dump",
+            "print_r",
+            "echo",
+            "print",
+            "var_export",
+            "printf",
+            "die",
+            "exit",
+            "error_log",
+            "trigger_error",
+            "user_error",
+            "debug_backtrace",
+            "dump",
+            "dd",
+            "xdebug_var_dump",
+            "xdebug_debug_zval",
+            "xdebug_break"
           ],
           "description": "%config.stagingGuard.types.desc%"
         }
@@ -527,8 +571,8 @@
     "package": "vsce package --no-dep-check"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
     "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "eslint": "^8.28.0",
@@ -548,5 +592,8 @@
   "galleryBanner": {
     "color": "#0D9488",
     "theme": "dark"
+  },
+  "dependencies": {
+    "php-parser": "^3.1.5"
   }
 }
