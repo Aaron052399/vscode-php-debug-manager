@@ -3,9 +3,13 @@ import { DebugManagerView } from './debugManagerView';
 import { DebugScanner } from './debugScanner';
 import { StagingGuard } from './stagingGuard';
 import { setLocale, t } from './i18n';
+import { PhpAstParser } from './phpAstParser';
 
 let currentGuard: StagingGuard | null = null;
 let guardCfgListener: vscode.Disposable | null = null;
+
+// AST 解析器实例（全局复用）
+const astParser = new PhpAstParser();
 
 function analyzeBrackets(editor: vscode.TextEditor, selection: vscode.Selection) {
   const currentLine = editor.document.lineAt(selection.end.line);
@@ -31,40 +35,21 @@ function analyzeBrackets(editor: vscode.TextEditor, selection: vscode.Selection)
   };
 }
 
+const BRACE_CHARS = { '}': true, '{': true };
+
 function getIndent(text: string) {
   const m = text.match(/^\s*/);
   return m ? m[0] : '';
 }
 
+/**
+ * 从给定位置查找语句结尾（使用 AST 解析）
+ */
 function findStatementEndPosition(document: vscode.TextDocument, fromLine: number, fromChar: number): vscode.Position {
-  let li = fromLine;
-  let ci = fromChar;
-  let str: '"'|'\''|null = null;
-  let esc = false;
-  let p = 0, b = 0, c = 0;
-  while (li < document.lineCount) {
-    const t = document.lineAt(li).text;
-    for (let i = ci; i < t.length; i++) {
-      const ch = t[i];
-      if (str) {
-        if (ch === '\\') { esc = !esc; continue; }
-        if (ch === str && !esc) { str = null; }
-        esc = false; continue;
-      } else {
-        if (ch === '"' || ch === '\'') { str = ch as any; esc = false; continue; }
-        if (ch === '(') { p++; continue; }
-        if (ch === ')') { if (p>0) p--; continue; }
-        if (ch === '[') { b++; continue; }
-        if (ch === ']') { if (b>0) b--; continue; }
-        if (ch === '{') { c++; continue; }
-        if (ch === '}') { if (c>0) c--; continue; }
-        if (ch === ';' && p===0 && b===0 && c===0) { return new vscode.Position(li, i+1); }
-      }
-    }
-    li++;
-    ci = 0;
-  }
-  return new vscode.Position(Math.min(fromLine+1, document.lineCount), 0);
+  const code = document.getText();
+  const result = astParser.findStatementEnd(code, fromLine + 1, fromChar);
+  // findStatementEnd 返回 1-based 行号，需要转换为 0-based
+  return new vscode.Position(result.line - 1, result.column);
 }
 
 function getIndentIncrement(editor: vscode.TextEditor, baseIndent: string) {
@@ -85,173 +70,59 @@ function getPreviousContentIndent(editor: vscode.TextEditor, fromLine: number) {
     const t = editor.document.lineAt(i).text;
     const trimmed = t.trim();
     if (trimmed.length === 0) continue;
-    if (trimmed === '}' || trimmed === '{') continue;
+    if (trimmed in BRACE_CHARS) continue;
     return getIndent(t);
   }
   return '';
 }
 
+/**
+ * 验证括号是否匹配（使用 AST 解析）
+ */
 function checkBraceBalance(document: vscode.TextDocument): { ok: boolean; message?: string } {
-  let balance = 0;
-  const total = document.lineCount;
-  for (let i = 0; i < total; i++) {
-    const text = document.lineAt(i).text;
-    for (const ch of text) {
-      if (ch === '{') balance++;
-      else if (ch === '}') balance--;
-      if (balance < 0) {
-        return { ok: false, message: `在第 ${i + 1} 行出现未匹配的 '}'` };
-      }
-    }
-  }
-  if (balance !== 0) {
+  const code = document.getText();
+  const isBalanced = astParser.checkBraceBalance(code);
+  if (!isBalanced) {
     return { ok: false, message: '检测到未匹配的大括号，请检查代码块完整性。' };
   }
   return { ok: true };
 }
 
-// ---------------- 选区内容校验：变量/字符串/函数名 ----------------
-function scanBalanced(src: string, start: number, open: string, close: string): number {
-  // 从 start 位置开始，扫描并返回匹配到的闭合符号位置，支持嵌套与引号内容
-  let i = start;
-  let depth = 0;
-  let quote: string | null = null;
-  while (i < src.length) {
-    const ch = src[i];
-    if (quote) {
-      if (ch === quote) {
-        // 处理反斜杠转义，仅在偶数个反斜杠时视为闭合
-        let bs = 0;
-        let j = i - 1;
-        while (j >= start && src[j] === '\\') { bs++; j--; }
-        if (bs % 2 === 0) quote = null;
-      }
-      i++;
-      continue;
-    }
-    if (ch === '\'' || ch === '"') { quote = ch; i++; continue; }
-    if (ch === open) { depth++; i++; continue; }
-    if (ch === close) {
-      depth--;
-      if (depth === 0) return i;
-      if (depth < 0) return -1;
-      i++;
-      continue;
-    }
-    i++;
-  }
-  return -1;
-}
+// ---------------- 选区内容校验：变量/字符串/函数名（AST 版本） ----------------
 
+/**
+ * 验证表达式是否为 PHP 变量（使用 AST）
+ */
 function isPhpVariable(text: string): boolean {
-  // 轻量语法分析：支持
-  // - $base
-  // - ->property / ->method(...)
-  // - [ index ] 其中 index 支持复杂表达式与嵌套括号
-  // - 任意深度的链式组合，如 $obj->a()->b[0]->c['k']
-
-  const s = text.trim();
-  if (!s.startsWith('$')) return false;
-
-  let i = 1;
-  const idMatch = s.slice(i).match(/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*/);
-  if (!idMatch) return false;
-  i += idMatch[0].length;
-
-  while (i < s.length) {
-    // 跳过空白
-    while (i < s.length && /\s/.test(s[i])) i++;
-    if (i >= s.length) break;
-
-    if (s[i] === '[') {
-      const end = scanBalanced(s, i, '[', ']');
-      if (end < 0) return false;
-      i = end + 1;
-      continue;
-    }
-
-    if (s[i] === '-' && s[i + 1] === '>') {
-      i += 2;
-      while (i < s.length && /\s/.test(s[i])) i++;
-      const propMatch = s.slice(i).match(/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*/);
-      if (!propMatch) return false;
-      i += propMatch[0].length;
-      while (i < s.length && /\s/.test(s[i])) i++;
-
-      if (s[i] === '(') {
-        const end = scanBalanced(s, i, '(', ')');
-        if (end < 0) return false;
-        i = end + 1;
-      }
-      continue;
-    }
-
-    // 其它字符出现则认为不属于变量表达式
-    return false;
-  }
-
-  return true;
+  return astParser.isValidVariable(text);
 }
 
-function isQuotedStringContext(lineText: string, selection: vscode.Selection): boolean {
-  // 近似判断：选区被同一行上的引号包围，认为在字符串中
-  const leftDouble = lineText.lastIndexOf('"', selection.start.character - 1);
-  const leftSingle = lineText.lastIndexOf('\'', selection.start.character - 1);
-  const leftQuote = Math.max(leftDouble, leftSingle);
-  const rightDouble = lineText.indexOf('"', selection.end.character);
-  const rightSingle = lineText.indexOf('\'', selection.end.character);
-  const rightQuote = Math.min(
-    rightDouble === -1 ? Infinity : rightDouble,
-    rightSingle === -1 ? Infinity : rightSingle
-  );
-  return leftQuote !== -1 && rightQuote !== Infinity && leftQuote < selection.start.character && rightQuote > selection.end.character;
+/**
+ * 检查是否在字符串上下文中（使用 AST 解析）
+ */
+function isQuotedStringContext(code: string, lineNumber: number, columnNumber: number): boolean {
+  return astParser.isPositionInString(code, lineNumber, columnNumber);
 }
 
-function looksLikeFunctionCall(lineText: string, selection: vscode.Selection): boolean {
-  // 选中内容后紧跟 '(' 的情况，更可能是函数/方法名
-  const after = lineText.substring(selection.end.character).trimStart();
-  return after.startsWith('(');
+/**
+ * 检查是否看起来像函数调用（使用 AST 解析）
+ */
+function looksLikeFunctionCall(expression: string): boolean {
+  return astParser.isValidFunctionCall(expression);
 }
 
-// 识别 PHP 全局函数或静态方法调用表达式，如 explode(...) 或 Class::method(...)
+/**
+ * 识别 PHP 全局函数或静态方法调用表达式（使用 AST）
+ */
 function isPhpFunctionOrStaticCall(text: string): boolean {
-  const s = text.trim();
-  const idx = s.indexOf('(');
-  if (idx <= 0) return false;
-  // 调用者部分必须是标识符或 Class::method 链
-  const callee = s.slice(0, idx).trim();
-  const calleeOk = /^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*(?:::[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*)*$/.test(callee);
-  if (!calleeOk) return false;
-  // 参数括号必须平衡
-  const end = scanBalanced(s, idx, '(', ')');
-  if (end < 0) return false;
-  let i = end + 1;
-  // 允许在调用结果后继续链式访问/索引/再次调用
-  while (i < s.length) {
-    while (i < s.length && /\s/.test(s[i])) i++;
-    if (i >= s.length) break;
-    if (s[i] === '[') {
-      const e = scanBalanced(s, i, '[', ']');
-      if (e < 0) return false;
-      i = e + 1; continue;
-    }
-    if (s[i] === '-' && s[i+1] === '>') {
-      i += 2;
-      while (i < s.length && /\s/.test(s[i])) i++;
-      const m = s.slice(i).match(/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*/);
-      if (!m) return false;
-      i += m[0].length;
-      while (i < s.length && /\s/.test(s[i])) i++;
-      if (s[i] === '(') {
-        const e2 = scanBalanced(s, i, '(', ')');
-        if (e2 < 0) return false;
-        i = e2 + 1;
-      }
-      continue;
-    }
-    return false;
-  }
-  return true;
+  return looksLikeFunctionCall(text);
+}
+
+/**
+ * 识别 PHP 静态属性访问表达式（如 ClassName::$property）
+ */
+function isPhpStaticPropertyAccess(text: string): boolean {
+  return astParser.isValidStaticPropertyAccess(text);
 }
 
 function stripTrailingSemicolon(text: string): string {
@@ -296,21 +167,24 @@ export async function activate(context: vscode.ExtensionContext) {
       return;
     }
     // 校验：字符串上下文
-    if (isQuotedStringContext(currentLineText, selection)) {
+    if (isQuotedStringContext(editor.document.getText(), selection.end.line + 1, selection.end.character)) {
       vscode.window.showWarningMessage(t('insert.inString.skip'));
       return;
     }
     // 如果选区本身不含括号而其后紧跟 '('，提醒用户选中完整调用表达式
-    if (!selected.includes('(') && looksLikeFunctionCall(currentLineText, selection)) {
+    if (!selected.includes('(') && looksLikeFunctionCall(selectedClean)) {
       vscode.window.showWarningMessage(t('insert.selectFullCall'));
       return;
     }
 
-    // 处理打印表达式：变量或可调用表达式
+    // 处理打印表达式：变量、可调用表达式或静态属性访问
     let expression: string | null = null;
     if (selectedClean.startsWith('$')) {
       if (isPhpVariable(selectedClean)) expression = selectedClean;
     } else if (isPhpFunctionOrStaticCall(selectedClean)) {
+      expression = selectedClean;
+    } else if (isPhpStaticPropertyAccess(selectedClean)) {
+      // 支持静态属性访问：如 ClassName::$property
       expression = selectedClean;
     } else {
       const prevIdx = selection.start.character - 1;
@@ -340,7 +214,25 @@ export async function activate(context: vscode.ExtensionContext) {
     let indent = '';
     let closingBraceCase = false;
 
-    if (analysis.nextLineIsOpeningBracket) {
+    // 特殊场景：检测选中的变量是否在数组定义内
+    const code = editor.document.getText();
+    // AST 使用 1-based 行号
+    const arrayContext = astParser.findArrayContext(code, selection.end.line + 1, selection.end.character);
+    
+    if (arrayContext) {
+      // 在数组中选中变量：插入到数组定义起始位置之前
+      // arrayContext.startLine 是 1-based，转换为 0-based
+      const arrayStartLineIndex = arrayContext.startLine - 1;
+      
+      // 插入到数组起始行之前
+      const insertLineIndex = arrayStartLineIndex;
+      
+      // 使用数组起始行的缩进
+      const arrayLine = editor.document.lineAt(arrayStartLineIndex);
+      indent = getIndent(arrayLine.text);
+      
+      targetPosition = new vscode.Position(insertLineIndex, 0);
+    } else if (analysis.nextLineIsOpeningBracket) {
       // 在"{"之后插入：定位到"{"所在行的下一行，缩进比"{"行多一个级别
       const baseIndent = getIndent(analysis.nextLineText);
       const increasedIndent = baseIndent + getIndentIncrement(editor, baseIndent);
@@ -354,34 +246,28 @@ export async function activate(context: vscode.ExtensionContext) {
       indent = prevContentIndent || currentIndent;
       targetPosition = new vscode.Position(analysis.nextLineIndex, 0);
     } else {
-      const currLineText = editor.document.lineAt(selection.end.line).text;
-      const openIdx = currLineText.indexOf('{');
-      const hasOpeningBraceOnLine = openIdx >= 0;
-      let nextNonEmpty = Math.min(selection.end.line + 1, editor.document.lineCount - 1);
-      while (nextNonEmpty < editor.document.lineCount && editor.document.lineAt(nextNonEmpty).text.trim().length === 0) {
-        nextNonEmpty++;
-      }
-      const nextNonEmptyTrim = nextNonEmpty < editor.document.lineCount ? editor.document.lineAt(nextNonEmpty).text.trim() : '';
-      const afterOpen = hasOpeningBraceOnLine ? currLineText.slice(openIdx + 1).trim() : '';
-      if (hasOpeningBraceOnLine && afterOpen.startsWith('}')) {
-        const baseIndent = getIndent(currLineText);
-        const increasedIndent = baseIndent + getIndentIncrement(editor, baseIndent);
-        indent = increasedIndent;
-        const closeIdx = currLineText.indexOf('}', openIdx + 1);
-        targetPosition = new vscode.Position(selection.end.line, Math.max(0, closeIdx));
-        closingBraceCase = true;
-      } else if (hasOpeningBraceOnLine && /^}\s*/.test(nextNonEmptyTrim)) {
-        const baseIndent = getIndent(editor.document.lineAt(nextNonEmpty).text);
-        const increasedIndent = baseIndent + getIndentIncrement(editor, baseIndent);
-        indent = increasedIndent;
-        targetPosition = new vscode.Position(nextNonEmpty, 0);
+      // 默认情况：直接插入到当前行的下一行
+      // 这适用于：条件语句、循环语句等各种使用变量的场景
+      const currentLineIndex = selection.end.line;
+      const currentLine = editor.document.lineAt(currentLineIndex);
+      const currentIndent = getIndent(currentLine.text);
+      
+      // 检查下一行是否有代码内容（非空非纯括号行）
+      const nextLineIndex = currentLineIndex + 1;
+      if (nextLineIndex < editor.document.lineCount) {
+        const nextLine = editor.document.lineAt(nextLineIndex);
+        const nextLineTrimmed = nextLine.text.trim();
+        // 如果下一行有实际代码内容（非空、非纯括号），使用下一行的缩进
+        if (nextLineTrimmed.length > 0 && nextLineTrimmed !== '{' && nextLineTrimmed !== '}') {
+          indent = getIndent(nextLine.text);
+        } else {
+          indent = currentIndent;
+        }
       } else {
-      const endPos = findStatementEndPosition(editor.document, selection.end.line, selection.end.character);
-      const nextLineIndex = Math.min(endPos.line + 1, editor.document.lineCount - 1);
-      const prevIndent = getPreviousContentIndent(editor, endPos.line);
-      indent = prevIndent || getIndent(editor.document.lineAt(endPos.line).text);
-      targetPosition = new vscode.Position(endPos.line + 1, 0);
+        indent = currentIndent;
       }
+      
+      targetPosition = new vscode.Position(nextLineIndex, 0);
     }
 
     editor.edit(builder => {
@@ -515,19 +401,31 @@ async function injectStageGuard(context: vscode.ExtensionContext, output: vscode
   }
   if (currentGuard) { currentGuard.stop(); }
   currentGuard = new StagingGuard(output);
-  try { await currentGuard.start(); } catch (err) { console.error('StagingGuard 启动失败', err); }
-  if (guardCfgListener) { try { guardCfgListener.dispose(); } catch {} }
+  try {
+    await currentGuard.start();
+  } catch (err) {
+    console.error('StagingGuard 启动失败', err);
+  }
+  if (guardCfgListener) {
+    try {
+      guardCfgListener.dispose();
+    } catch {}
+  }
   guardCfgListener = vscode.workspace.onDidChangeConfiguration(e => {
     if (e.affectsConfiguration('phpDebugManager.language')) {
       const newLang = vscode.workspace.getConfiguration('phpDebugManager').get<string>('language', 'en') as any;
       setLocale(newLang as any);
-      try { output.clear(); } catch {}
+      try {
+        output.clear();
+      } catch {}
       output.appendLine(t('startup.loading', new Date().toLocaleString()));
       output.appendLine(t('view.init.done', new Date().toLocaleString(), 0));
       output.appendLine(t('startup.loaded', new Date().toLocaleString(), 0));
     }
     if (e.affectsConfiguration('phpDebugManager.stagingGuard')) {
-      try { currentGuard?.stop(); } catch {}
+      try {
+        currentGuard?.stop();
+      } catch {}
       injectStageGuard(context, output);
     }
   });
