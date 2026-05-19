@@ -28,11 +28,12 @@ export interface DebugStatementNode {
  * 封装 php-parser 库，提供统一的解析入口
  */
 export class PhpAstParser {
-  private parser: phpParser.Engine;
-  
-  constructor() {
-    // 创建 PHP 解析器实例，配置容错模式
-    this.parser = new phpParser.Engine({
+  /**
+   * 创建新的 PHP 解析器实例
+   * 每次调用都创建新实例，避免解析错误文件后状态污染
+   */
+  private createParser(): phpParser.Engine {
+    return new phpParser.Engine({
       parser: {
         // 启用容错模式，尽可能解析有语法错误的代码
         suppressErrors: true,
@@ -51,6 +52,10 @@ export class PhpAstParser {
       },
     });
   }
+  
+  constructor() {
+    // 构造函数保留，但不再预创建解析器实例
+  }
 
   /**
    * 解析 PHP 代码为 AST
@@ -66,7 +71,9 @@ export class PhpAstParser {
         codeToparse = `<?php\n${code}`;
       }
       
-      return this.parser.parseCode(codeToparse, filePath) as PhpProgram;
+      // 每次解析创建新实例，避免解析错误文件后污染后续解析
+      const parser = this.createParser();
+      return parser.parseCode(codeToparse, filePath) as PhpProgram;
     } catch (error) {
       // 解析失败，返回 null
       return null;
@@ -95,7 +102,108 @@ export class PhpAstParser {
       }
     });
 
-    return statements;
+    // 合并同一行的调试语句与紧随的 exit/die
+    return this.mergeConsecutiveStatements(statements, sourceLines);
+  }
+
+  /**
+   * 合并同一行的调试语句与紧随的 exit/die
+   * 例如：var_dump($x);exit; 合并为一条记录
+   * @param statements 原始调试语句列表
+   * @param sourceLines 源代码行数组
+   * @returns 合并后的调试语句列表
+   */
+  private mergeConsecutiveStatements(statements: DebugStatementNode[], sourceLines: string[]): DebugStatementNode[] {
+    if (statements.length < 2) {
+      return statements;
+    }
+
+    // 按行号和列号排序
+    const sorted = [...statements].sort((a, b) => {
+      if (a.location.start.line !== b.location.start.line) {
+        return a.location.start.line - b.location.start.line;
+      }
+      return a.location.start.column - b.location.start.column;
+    });
+
+    const result: DebugStatementNode[] = [];
+    const merged = new Set<number>(); // 记录已合并的语句索引
+
+    for (let i = 0; i < sorted.length; i++) {
+      if (merged.has(i)) {
+        continue;
+      }
+
+      const current = sorted[i];
+      
+      // 检查是否是可合并的调试函数（非 exit/die）
+      if (current.type !== 'exit' && current.type !== 'die') {
+        // 查找同一行后面紧跟的 exit/die
+        for (let j = i + 1; j < sorted.length; j++) {
+          if (merged.has(j)) {
+            continue;
+          }
+          
+          const next = sorted[j];
+          
+          // 检查是否在同一行
+          if (next.location.start.line !== current.location.start.line) {
+            break;
+          }
+          
+          // 检查是否是 exit/die
+          if (next.type === 'exit' || next.type === 'die') {
+            // 合并语句
+            const mergedContent = this.getMergedContent(current, next, sourceLines);
+            const mergedNode: DebugStatementNode = {
+              type: current.type, // 保持主调试函数类型
+              location: {
+                start: current.location.start,
+                end: next.location.end // 扩展到 exit 结束
+              },
+              content: mergedContent,
+              severity: 'error' // 有 exit/die 时严重级别提升为 error
+            };
+            result.push(mergedNode);
+            merged.add(i);
+            merged.add(j);
+            break;
+          }
+        }
+      }
+
+      // 如果未被合并，添加原始语句
+      if (!merged.has(i)) {
+        result.push(current);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * 获取合并后的内容
+   * @param first 第一个语句
+   * @param second 第二个语句（exit/die）
+   * @param sourceLines 源代码行数组
+   * @returns 合并后的内容字符串
+   */
+  private getMergedContent(first: DebugStatementNode, second: DebugStatementNode, sourceLines: string[]): string {
+    // 都在同一行，直接提取从第一个语句开始到第二个语句结束的内容
+    const line = first.location.start.line - 1;
+    if (line < 0 || line >= sourceLines.length) {
+      return first.content + ';' + second.content;
+    }
+
+    const sourceLine = sourceLines[line];
+    const startCol = first.location.start.column;
+    const endCol = second.location.end.column;
+
+    if (startCol >= 0 && endCol <= sourceLine.length) {
+      return sourceLine.substring(startCol, endCol).trim();
+    }
+
+    return first.content + ';' + second.content;
   }
 
   /**
@@ -320,7 +428,8 @@ export class PhpAstParser {
     try {
       // 尝试解析为 PHP 表达式
       const code = `<?php ${trimmed};`;
-      const ast = this.parser.parseCode(code, 'expression.php') as PhpProgram;
+      const parser = this.createParser();
+      const ast = parser.parseCode(code, 'expression.php') as PhpProgram;
       
       if (!ast || !ast.children || ast.children.length === 0) {
         return false;
@@ -359,7 +468,8 @@ export class PhpAstParser {
     try {
       // 尝试解析为 PHP 表达式
       const code = `<?php ${trimmed};`;
-      const ast = this.parser.parseCode(code, 'expression.php') as PhpProgram;
+      const parser = this.createParser();
+      const ast = parser.parseCode(code, 'expression.php') as PhpProgram;
       
       if (!ast || !ast.children || ast.children.length === 0) {
         return false;
@@ -399,7 +509,8 @@ export class PhpAstParser {
     try {
       // 尝试解析为 PHP 表达式
       const code = `<?php ${trimmed};`;
-      const ast = this.parser.parseCode(code, 'expression.php') as PhpProgram;
+      const parser = this.createParser();
+      const ast = parser.parseCode(code, 'expression.php') as PhpProgram;
       
       if (!ast || !ast.children || ast.children.length === 0) {
         return false;
@@ -632,5 +743,244 @@ export class PhpAstParser {
 
     // 未找到分号，返回最后位置
     return { line: lines.length, column: lines[lines.length - 1].length };
+  }
+
+  /**
+   * 从给定行号向上查找所在函数/方法的起始行
+   * 使用 AST 遍历实现，更精确地定位函数体起点
+   * @param code 完整的 PHP 代码
+   * @param lineNumber 光标所在行号（1-based）
+   * @returns 函数起始行号（1-based），如果不在函数内返回 1
+   */
+  public findFunctionScopeStart(code: string, lineNumber: number): number {
+    try {
+      const ast = this.parse(code, 'scope.php');
+      if (!ast || !ast.children) {
+        // AST 解析失败，降级为简单的正则查找
+        return this.findFunctionScopeStartFallback(code, lineNumber);
+      }
+
+      let closestFunctionStart = 0;
+      const lines = code.split('\n');
+
+      // 遍历 AST 找到包含 lineNumber 的最小函数
+      this.traverseNode(ast, (node: PhpNode) => {
+        if (!node.loc || !node.kind) return;
+
+        // 识别函数和方法定义
+        const isFunctionNode = node.kind === 'function' || node.kind === 'method';
+        if (!isFunctionNode) return;
+
+        const startLine = node.loc.start.line;
+        const endLine = node.loc.end.line;
+
+        // 检查 lineNumber 是否在函数范围内
+        if (startLine <= lineNumber && lineNumber <= endLine) {
+          // 更新为包含光标的最内层函数
+          if (closestFunctionStart === 0 || startLine > closestFunctionStart) {
+            closestFunctionStart = startLine;
+          }
+        }
+      });
+
+      return closestFunctionStart > 0 ? closestFunctionStart : 1;
+    } catch {
+      // 解析异常，降级处理
+      return this.findFunctionScopeStartFallback(code, lineNumber);
+    }
+  }
+
+  /**
+   * 回退方案：使用简单的行扫描查找函数起始位置
+   * @param code 完整的 PHP 代码
+   * @param lineNumber 光标所在行号（1-based）
+   * @returns 函数起始行号
+   */
+  private findFunctionScopeStartFallback(code: string, lineNumber: number): number {
+    const lines = code.split('\n');
+    // 从当前行向上查找函数/方法关键字
+    for (let i = lineNumber - 1; i >= 0; i--) {
+      const line = lines[i];
+      // 匹配 function、public、private、protected、static 等关键字
+      if (/\b(function|public|private|protected|static|abstract|final|const)\s+/i.test(line)) {
+        return i + 1; // 返回 1-based 行号
+      }
+    }
+    return 1; // 未找到则从第一行开始
+  }
+
+  /**
+   * 从给定行号查找该函数/方法的结束行
+   * 使用 AST 遍历实现精确定位
+   * @param code 完整的 PHP 代码
+   * @param lineNumber 光标所在行号（1-based）
+   * @returns 函数结束行号（1-based）
+   */
+  public findFunctionScopeEnd(code: string, lineNumber: number): number {
+    try {
+      const ast = this.parse(code, 'scope.php');
+      if (!ast || !ast.children) {
+        return this.findFunctionScopeEndFallback(code, lineNumber);
+      }
+
+      let closestFunctionEnd = code.split('\n').length;
+      const lines = code.split('\n');
+
+      // 遍历 AST 找到包含 lineNumber 的函数结束位置
+      this.traverseNode(ast, (node: PhpNode) => {
+        if (!node.loc || !node.kind) return;
+
+        const isFunctionNode = node.kind === 'function' || node.kind === 'method';
+        if (!isFunctionNode) return;
+
+        const startLine = node.loc.start.line;
+        const endLine = node.loc.end.line;
+
+        // 检查 lineNumber 是否在函数范围内
+        if (startLine <= lineNumber && lineNumber <= endLine) {
+          // 找到最内层函数
+          closestFunctionEnd = Math.min(closestFunctionEnd, endLine);
+        }
+      });
+
+      return closestFunctionEnd > 0 ? closestFunctionEnd : lines.length;
+    } catch {
+      return this.findFunctionScopeEndFallback(code, lineNumber);
+    }
+  }
+
+  /**
+   * 回退方案：使用括号匹配查找函数结束位置
+   * @param code 完整的 PHP 代码
+   * @param lineNumber 光标所在行号（1-based）
+   * @returns 函数结束行号
+   */
+  private findFunctionScopeEndFallback(code: string, lineNumber: number): number {
+    const lines = code.split('\n');
+    const startLine = this.findFunctionScopeStartFallback(code, lineNumber);
+
+    let braceCount = 0;
+    let foundOpeningBrace = false;
+
+    for (let i = startLine - 1; i < lines.length; i++) {
+      const line = lines[i];
+      for (let j = 0; j < line.length; j++) {
+        // 跳过字符串和注释
+        if (this.isPositionInString(code, i + 1, j) || this.isPositionInComment(code, i + 1, j)) {
+          continue;
+        }
+
+        const char = line[j];
+        if (char === '{') {
+          braceCount++;
+          foundOpeningBrace = true;
+        } else if (char === '}' && foundOpeningBrace) {
+          braceCount--;
+          if (braceCount === 0) {
+            return i + 1; // 返回 1-based 行号
+          }
+        }
+      }
+    }
+
+    return lines.length;
+  }
+
+  /**
+   * 从局部代码范围（函数/方法内）检查括号是否匹配
+   * @param code 完整的 PHP 代码
+   * @param lineNumber 光标所在行号（1-based）
+   * @returns 括号是否匹配
+   */
+  public checkBraceBalanceInScope(code: string, lineNumber: number): boolean {
+    const startLine = this.findFunctionScopeStart(code, lineNumber);
+    const endLine = this.findFunctionScopeEnd(code, lineNumber);
+
+    const lines = code.split('\n');
+    let balance = 0;
+
+    for (let i = startLine - 1; i < endLine && i < lines.length; i++) {
+      const line = lines[i];
+      for (let j = 0; j < line.length; j++) {
+        // 跳过字符串和注释
+        if (this.isPositionInString(code, i + 1, j) || this.isPositionInComment(code, i + 1, j)) {
+          continue;
+        }
+
+        const char = line[j];
+        if (char === '{' || char === '[' || char === '(') {
+          balance++;
+        } else if (char === '}' || char === ']' || char === ')') {
+          balance--;
+          if (balance < 0) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return balance === 0;
+  }
+
+  /**
+   * 在局部作用域内检测给定位置是否在数组定义内
+   * @param code 完整的 PHP 代码
+   * @param lineNumber 光标所在行号（1-based）
+   * @param columnNumber 光标所在列号（0-based）
+   * @returns 如果在数组内返回数组起始位置，否则返回 null
+   */
+  public findArrayContextInScope(code: string, lineNumber: number, columnNumber: number): { startLine: number; startColumn: number } | null {
+    try {
+      const ast = this.parse(code, 'scope.php');
+      if (!ast || !ast.children) {
+        return null;
+      }
+
+      const scopeStart = this.findFunctionScopeStart(code, lineNumber);
+      const scopeEnd = this.findFunctionScopeEnd(code, lineNumber);
+
+      let foundArray: { startLine: number; startColumn: number; size: number } | null = null;
+
+      // 遍历 AST 查找包含给定位置的数组节点（仅在当前作用域内）
+      this.traverseNode(ast, (node: PhpNode) => {
+        if (!node || !node.loc) return;
+
+        // 检查是否是数组节点
+        if (node.kind === 'array') {
+          const loc = node.loc as NodeLocation;
+          const startLine = loc.start.line;
+          const endLine = loc.end.line;
+
+          // 检查数组是否在当前作用域内
+          if (startLine < scopeStart || endLine > scopeEnd) {
+            return;
+          }
+
+          const startCol = loc.start.column;
+          const endCol = loc.end.column;
+
+          // 检查给定位置是否在该数组节点范围内
+          const isAfterStart = lineNumber > startLine || (lineNumber === startLine && columnNumber >= startCol);
+          const isBeforeEnd = lineNumber < endLine || (lineNumber === endLine && columnNumber <= endCol);
+
+          if (isAfterStart && isBeforeEnd) {
+            // 计算数组大小（用于找到最内层数组）
+            const size = (endLine - startLine) * 1000 + (endCol - startCol);
+
+            // 找到包含位置的最内层数组（最小的数组）
+            if (!foundArray || size < foundArray.size) {
+              foundArray = { startLine: startLine, startColumn: startCol, size: size };
+            }
+          }
+        }
+      });
+
+      if (foundArray) {
+        return { startLine: foundArray.startLine, startColumn: foundArray.startColumn };
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 }

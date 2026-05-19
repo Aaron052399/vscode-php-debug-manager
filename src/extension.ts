@@ -8,8 +8,55 @@ import { PhpAstParser } from './phpAstParser';
 let currentGuard: StagingGuard | null = null;
 let guardCfgListener: vscode.Disposable | null = null;
 
-// AST 解析器实例（全局复用）
-const astParser = new PhpAstParser();
+// AST 解析器工厂函数（避免全局状态污染）
+// 每次需要验证时创建新实例，确保没有状态污染
+function createAstParser(): PhpAstParser {
+  return new PhpAstParser();
+}
+
+// 当前命令执行中的临时 parser（在命令期间复用，执行完毕后清空）
+let commandScopedParser: PhpAstParser | null = null;
+
+/**
+ * 获取命令作用域内的 parser（如果不存在则创建）
+ * 用于在单次命令执行中复用 parser，提高性能
+ */
+function getCommandScopedParser(): PhpAstParser {
+  if (!commandScopedParser) {
+    commandScopedParser = new PhpAstParser();
+  }
+  return commandScopedParser;
+}
+
+/**
+ * 清空命令作用域内的 parser（在命令结束时调用）
+ * 确保下一条命令获得一个全新的 parser，避免状态污染
+ */
+function clearCommandScopedParser(): void {
+  commandScopedParser = null;
+}
+
+// 输出通道（延迟初始化）
+let dumpOutputChannel: vscode.OutputChannel | null = null;
+
+function getDumpOutputChannel(): vscode.OutputChannel {
+  if (!dumpOutputChannel) {
+    dumpOutputChannel = vscode.window.createOutputChannel(t('dump.log.channel'));
+  }
+  return dumpOutputChannel;
+}
+
+/**
+ * 记录调试语句插入日志
+ */
+function logDumpInsertion(filePath: string, lineNumber: number, expression: string, dumpStatement: string, durationMs: number): void {
+  const channel = getDumpOutputChannel();
+  const timestamp = new Date().toLocaleString();
+  const fileName = filePath.split(/[\/\\]/).pop() || filePath;
+  channel.appendLine(t('dump.log.inserted', timestamp, fileName, String(lineNumber), expression, dumpStatement) + ` [${durationMs}ms]`);
+}
+
+// ============= AST 验证所有表达式 =============
 
 function analyzeBrackets(editor: vscode.TextEditor, selection: vscode.Selection) {
   const currentLine = editor.document.lineAt(selection.end.line);
@@ -47,7 +94,8 @@ function getIndent(text: string) {
  */
 function findStatementEndPosition(document: vscode.TextDocument, fromLine: number, fromChar: number): vscode.Position {
   const code = document.getText();
-  const result = astParser.findStatementEnd(code, fromLine + 1, fromChar);
+  const parser = commandScopedParser || createAstParser();
+  const result = parser.findStatementEnd(code, fromLine + 1, fromChar);
   // findStatementEnd 返回 1-based 行号，需要转换为 0-based
   return new vscode.Position(result.line - 1, result.column);
 }
@@ -77,11 +125,14 @@ function getPreviousContentIndent(editor: vscode.TextEditor, fromLine: number) {
 }
 
 /**
- * 验证括号是否匹配（使用 AST 解析）
+ * 验证括号是否匹配（使用 AST 局部检查）
  */
-function checkBraceBalance(document: vscode.TextDocument): { ok: boolean; message?: string } {
+function checkBraceBalance(document: vscode.TextDocument, fromLine?: number): { ok: boolean; message?: string } {
   const code = document.getText();
-  const isBalanced = astParser.checkBraceBalance(code);
+  const parser = commandScopedParser || createAstParser();
+  
+  // 如果提供了行号，仅检查该函数作用域范围内的括号
+  const isBalanced = fromLine ? parser.checkBraceBalanceInScope(code, fromLine) : parser.checkBraceBalance(code);
   if (!isBalanced) {
     return { ok: false, message: '检测到未匹配的大括号，请检查代码块完整性。' };
   }
@@ -91,38 +142,45 @@ function checkBraceBalance(document: vscode.TextDocument): { ok: boolean; messag
 // ---------------- 选区内容校验：变量/字符串/函数名（AST 版本） ----------------
 
 /**
- * 验证表达式是否为 PHP 变量（使用 AST）
+ * 验证表达式是否为 PHP 变量（直接 AST 验证）
  */
 function isPhpVariable(text: string): boolean {
-  return astParser.isValidVariable(text);
+  // 直接使用 AST 验证，优先使用命令作用域的 parser
+  const parser = commandScopedParser || createAstParser();
+  return parser.isValidVariable(text);
 }
 
 /**
- * 检查是否在字符串上下文中（使用 AST 解析）
+ * 检查是否在字符串上下文中（轻量级字符扫描）
  */
 function isQuotedStringContext(code: string, lineNumber: number, columnNumber: number): boolean {
-  return astParser.isPositionInString(code, lineNumber, columnNumber);
+  const parser = commandScopedParser || createAstParser();
+  return parser.isPositionInString(code, lineNumber, columnNumber);
 }
 
 /**
- * 检查是否看起来像函数调用（使用 AST 解析）
+ * 检查是否看起来像函数调用（直接 AST 验证）
  */
 function looksLikeFunctionCall(expression: string): boolean {
-  return astParser.isValidFunctionCall(expression);
+  // 直接使用 AST 验证，优先使用命令作用域的 parser
+  const parser = commandScopedParser || createAstParser();
+  return parser.isValidFunctionCall(expression);
 }
 
 /**
- * 识别 PHP 全局函数或静态方法调用表达式（使用 AST）
+ * 识别 PHP 全局函数或静态方法调用表达式
  */
 function isPhpFunctionOrStaticCall(text: string): boolean {
   return looksLikeFunctionCall(text);
 }
 
 /**
- * 识别 PHP 静态属性访问表达式（如 ClassName::$property）
+ * 识別 PHP 静态属性访问表达式（直接 AST 验证）
  */
 function isPhpStaticPropertyAccess(text: string): boolean {
-  return astParser.isValidStaticPropertyAccess(text);
+  // 直接使用 AST 验证，优先使用命令作用域的 parser
+  const parser = commandScopedParser || createAstParser();
+  return parser.isValidStaticPropertyAccess(text);
 }
 
 function stripTrailingSemicolon(text: string): string {
@@ -153,6 +211,7 @@ export async function activate(context: vscode.ExtensionContext) {
   
   // 注册原有的dump变量命令
   const dumpVariableDisposable = vscode.commands.registerCommand('phpDebugManager.dumpVariable', () => {
+    const startTime = Date.now(); // 记录开始时间
     const editor = vscode.window.activeTextEditor;
     if (!editor) { return; }
 
@@ -201,8 +260,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const dumpLine = getPrintStatement(editor.document.languageId, expression);
 
-    // 先进行括号匹配检查
-    const balance = checkBraceBalance(editor.document);
+    // 先进行括号匹配检查（使用 AST 局部检查）
+    const balance = checkBraceBalance(editor.document, selection.end.line + 1);
     if (!balance.ok) {
       vscode.window.showErrorMessage(balance.message || t('brace.unbalanced'));
       return;
@@ -217,7 +276,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // 特殊场景：检测选中的变量是否在数组定义内
     const code = editor.document.getText();
     // AST 使用 1-based 行号
-    const arrayContext = astParser.findArrayContext(code, selection.end.line + 1, selection.end.character);
+    const parser = getCommandScopedParser();
+    // 使用 AST 局部数组检查
+    const arrayContext = parser.findArrayContextInScope(code, selection.end.line + 1, selection.end.character);
     
     if (arrayContext) {
       // 在数组中选中变量：插入到数组定义起始位置之前
@@ -273,6 +334,22 @@ export async function activate(context: vscode.ExtensionContext) {
     editor.edit(builder => {
       const insertText = (closingBraceCase ? '\n' : '') + indent + dumpLine + '\n';
       builder.insert(targetPosition!, insertText);
+    }).then(success => {
+      if (success) {
+        // 记录日志到输出通道
+        const insertedLine = (targetPosition?.line ?? selection.end.line) + 1;
+        const endTime = Date.now(); // 记录结束时间
+        const duration = endTime - startTime; // 计算耗时
+        logDumpInsertion(
+          editor.document.fileName,
+          insertedLine,
+          expression!,
+          dumpLine,
+          duration
+        );
+      }
+      // 清空命令作用域内的 parser，避免下次命令执行时空有状态污染
+      clearCommandScopedParser();
     });
   });
 

@@ -4,6 +4,18 @@
 
 ## English
 
+### 1.1.3 - 2025-12-10
+- Fixed: Parser state corruption when parsing files with syntax errors
+- Improved: Merged consecutive debug statements with trailing `exit;` or `die;` into single record
+- Enhanced: Performance optimization for expression validation and scope checking
+- Added: Execution time tracking for debug statement insertion (in milliseconds)
+
+### 1.1.2 - 2025-12-10
+- Fixed: php-parser dependency not bundled in published extension
+
+### 1.1.1 - 2025-12-10
+- (Deprecated) Dependency bundling issue
+
 ### 1.1.0 - 2025-12-10
 - **Major**: Replaced regex-based scanning with PHP AST parsing (using `php-parser`)
 - Added new `phpAstParser.ts` module for accurate PHP syntax analysis
@@ -36,6 +48,18 @@
 - Initial version with Debug Manager and VarDumper tool
 
 ## 简体中文
+
+### 1.1.3 - 2025-12-10
+- 修复：解析包含语法错误的 PHP 文件后，解析器状态污染导致后续解析失败
+- 改进：检测到连续的调试语句和 `exit;` 或 `die;` 时，将其合并为单条记录
+- 性能优化：提升表达式验证和作用域检查的速度
+- 新增：调试语句插入时记录执行耗时（毫秒级）到输出通道
+
+### 1.1.2 - 2025-12-10
+- 修复：php-parser 依赖未打包到发布的扩展中
+
+### 1.1.1 - 2025-12-10
+- （已废弃）依赖打包问题
 
 ### 1.1.0 - 2025-12-10
 - **重大更新**：使用 PHP AST 解析器（php-parser）替代正则表达式进行调试语句扫描

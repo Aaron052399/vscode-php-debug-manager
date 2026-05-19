@@ -69,7 +69,9 @@ const dict: Record<Locale, Record<string, string>> = {
     'open.file.failed': 'Failed to open file: {0}',
     'line': 'line',
     'view.manager.name': 'PHP Debug Manager',
-    'view.bookmarks.name': 'Debug Statement Bookmarks'
+    'view.bookmarks.name': 'Debug Statement Bookmarks',
+    'dump.log.channel': 'PHP Debug Manager - Dump Log',
+    'dump.log.inserted': '[{0}] {1}:{2} | {3} → {4}'
   },
   'zh-cn': {
     'channel.name': 'PHP 调试管理器',
@@ -136,7 +138,9 @@ const dict: Record<Locale, Record<string, string>> = {
     'open.file.failed': '无法打开文件: {0}',
     'line': 'line',
     'view.manager.name': 'PHP 调试管理器',
-    'view.bookmarks.name': '调试语句书签'
+    'view.bookmarks.name': '调试语句书签',
+    'dump.log.channel': 'PHP 调试管理器 - 打印日志',
+    'dump.log.inserted': '[{0}] {1}:{2} | {3} → {4}'
   }
 };
 
